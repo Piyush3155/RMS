@@ -2889,7 +2889,6 @@ export namespace Prisma {
     email: string | null
     username: string | null
     password: string | null
-    role: string | null
     name: string | null
   }
 
@@ -2898,7 +2897,6 @@ export namespace Prisma {
     email: string | null
     username: string | null
     password: string | null
-    role: string | null
     name: string | null
   }
 
@@ -2907,7 +2905,6 @@ export namespace Prisma {
     email: number
     username: number
     password: number
-    role: number
     name: number
     _all: number
   }
@@ -2926,7 +2923,6 @@ export namespace Prisma {
     email?: true
     username?: true
     password?: true
-    role?: true
     name?: true
   }
 
@@ -2935,7 +2931,6 @@ export namespace Prisma {
     email?: true
     username?: true
     password?: true
-    role?: true
     name?: true
   }
 
@@ -2944,7 +2939,6 @@ export namespace Prisma {
     email?: true
     username?: true
     password?: true
-    role?: true
     name?: true
     _all?: true
   }
@@ -3040,7 +3034,6 @@ export namespace Prisma {
     email: string
     username: string
     password: string
-    role: string
     name: string | null
     _count: UserCountAggregateOutputType | null
     _avg: UserAvgAggregateOutputType | null
@@ -3068,7 +3061,6 @@ export namespace Prisma {
     email?: boolean
     username?: boolean
     password?: boolean
-    role?: boolean
     name?: boolean
   }, ExtArgs["result"]["user"]>
 
@@ -3079,11 +3071,10 @@ export namespace Prisma {
     email?: boolean
     username?: boolean
     password?: boolean
-    role?: boolean
     name?: boolean
   }
 
-  export type userOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "username" | "password" | "role" | "name", ExtArgs["result"]["user"]>
+  export type userOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "username" | "password" | "name", ExtArgs["result"]["user"]>
 
   export type $userPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "user"
@@ -3093,7 +3084,6 @@ export namespace Prisma {
       email: string
       username: string
       password: string
-      role: string
       name: string | null
     }, ExtArgs["result"]["user"]>
     composites: {}
@@ -3468,7 +3458,6 @@ export namespace Prisma {
     readonly email: FieldRef<"user", 'String'>
     readonly username: FieldRef<"user", 'String'>
     readonly password: FieldRef<"user", 'String'>
-    readonly role: FieldRef<"user", 'String'>
     readonly name: FieldRef<"user", 'String'>
   }
     
@@ -3832,7 +3821,6 @@ export namespace Prisma {
     email: 'email',
     username: 'username',
     password: 'password',
-    role: 'role',
     name: 'name'
   };
 
@@ -3874,7 +3862,6 @@ export namespace Prisma {
     email: 'email',
     username: 'username',
     password: 'password',
-    role: 'role',
     name: 'name'
   };
 
@@ -4042,7 +4029,6 @@ export namespace Prisma {
     email?: StringFilter<"user"> | string
     username?: StringFilter<"user"> | string
     password?: StringFilter<"user"> | string
-    role?: StringFilter<"user"> | string
     name?: StringNullableFilter<"user"> | string | null
   }
 
@@ -4051,7 +4037,6 @@ export namespace Prisma {
     email?: SortOrder
     username?: SortOrder
     password?: SortOrder
-    role?: SortOrder
     name?: SortOrderInput | SortOrder
     _relevance?: userOrderByRelevanceInput
   }
@@ -4064,7 +4049,6 @@ export namespace Prisma {
     OR?: userWhereInput[]
     NOT?: userWhereInput | userWhereInput[]
     password?: StringFilter<"user"> | string
-    role?: StringFilter<"user"> | string
     name?: StringNullableFilter<"user"> | string | null
   }, "id" | "email" | "username">
 
@@ -4073,7 +4057,6 @@ export namespace Prisma {
     email?: SortOrder
     username?: SortOrder
     password?: SortOrder
-    role?: SortOrder
     name?: SortOrderInput | SortOrder
     _count?: userCountOrderByAggregateInput
     _avg?: userAvgOrderByAggregateInput
@@ -4090,7 +4073,6 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"user"> | string
     username?: StringWithAggregatesFilter<"user"> | string
     password?: StringWithAggregatesFilter<"user"> | string
-    role?: StringWithAggregatesFilter<"user"> | string
     name?: StringNullableWithAggregatesFilter<"user"> | string | null
   }
 
@@ -4204,7 +4186,6 @@ export namespace Prisma {
     email: string
     username: string
     password: string
-    role: string
     name?: string | null
   }
 
@@ -4213,7 +4194,6 @@ export namespace Prisma {
     email: string
     username: string
     password: string
-    role: string
     name?: string | null
   }
 
@@ -4221,7 +4201,6 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    role?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -4230,7 +4209,6 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    role?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -4239,7 +4217,6 @@ export namespace Prisma {
     email: string
     username: string
     password: string
-    role: string
     name?: string | null
   }
 
@@ -4247,7 +4224,6 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    role?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -4256,7 +4232,6 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
-    role?: StringFieldUpdateOperationsInput | string
     name?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -4487,7 +4462,6 @@ export namespace Prisma {
     email?: SortOrder
     username?: SortOrder
     password?: SortOrder
-    role?: SortOrder
     name?: SortOrder
   }
 
@@ -4500,7 +4474,6 @@ export namespace Prisma {
     email?: SortOrder
     username?: SortOrder
     password?: SortOrder
-    role?: SortOrder
     name?: SortOrder
   }
 
@@ -4509,7 +4482,6 @@ export namespace Prisma {
     email?: SortOrder
     username?: SortOrder
     password?: SortOrder
-    role?: SortOrder
     name?: SortOrder
   }
 

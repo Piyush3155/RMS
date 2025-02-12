@@ -7,30 +7,23 @@ const prisma2 = new PrismaClient2();
 
 export async function POST(req: NextRequest) {
   try {
-    const { username, email, password, role } = await req.json();
+    const { username, email, password } = await req.json();
 
     // Create user in the first database
     const newUserDB1 = await prisma1.user.create({
-      data: { username, email, password, role },
+      data: { username, email, password },
     });
 
     // Optionally, create user in the second database
     const newUserDB2 = await prisma2.user.create({
-      data: { username, email, password, role },
+      data: { username, email, password },
     });
 
-    // Define redirection based on role
-    let redirectUrl = "/profile"; // Default redirect
-    if (role === "admin") {
-      redirectUrl = "/admin";
-    } else if (role === "user") {
-      redirectUrl = "/user";
-    } else if (role === "superadmin") {
-      redirectUrl = "/manager";
-    }
+    // Default redirection
+    const redirectUrl = "/dash";
 
-    // Set cookies for the session (you can use username, role, or a JWT token)
-    const response = NextResponse.json(
+    // Set response with user data and redirection
+    return NextResponse.json(
       {
         message: "User registered successfully",
         newUserDB1,
@@ -39,16 +32,6 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-
-    // Set cookies with expiration
-    const cookieMaxAge = 60 * 60 * 24 * 7; // 1 week
-    response.cookies.set("username", username, { maxAge: cookieMaxAge, path: "/" });
-    response.cookies.set("role", role, { maxAge: cookieMaxAge, path: "/" });
-    response.cookies.set("password",password,{ maxAge: cookieMaxAge, path: "/" });
-    // If you're using JWT, you can set the token here
-    // response.cookies.set("auth_token", token, { maxAge: cookieMaxAge, path: "/" });
-
-    return response;
   } catch (error) {
     console.error("Error creating user:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

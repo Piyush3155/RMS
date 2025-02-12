@@ -33,6 +33,17 @@ model user {
   email    String  @unique(map: "User_email_key")
   username String  @unique(map: "User_username_key")
   password String
-  role     String
   name     String?
 }
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Float
+  quantity  Int
+  imageUrl  String
+  userId    Int      // Add userId to associate with a user
+  createdAt DateTime @default(now())
+
+  @@index([name], map: "Product_name_index")
+}
+

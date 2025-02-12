@@ -32,6 +32,16 @@ model user {
   email    String  @unique(map: "User_email_key")
   username String  @unique(map: "User_username_key")
   password String
-  role     String
   name     String?
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Decimal
+  quantity  Int
+  imageUrl  String
+  createdAt DateTime @default(now())
+
+  @@index([name], map: "Product_name_index") // Index on name for faster searches
 }

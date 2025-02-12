@@ -32,6 +32,5 @@ model user {
   email    String  @unique(map: "User_email_key")
   username String  @unique(map: "User_username_key")
   password String
-  role     String
   name     String?
 }
