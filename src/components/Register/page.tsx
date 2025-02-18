@@ -43,7 +43,6 @@ const Register = () => {
 
       if (!response.ok) {
         alert(translations[language]?.userExists || "Username or Email already exists");
-        throw new Error("Failed to register user");
       }
 
       alert(translations[language]?.registrationSuccess || "Registration successful!");

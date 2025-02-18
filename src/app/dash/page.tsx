@@ -6,7 +6,6 @@ import React from 'react'
 const dash = () => {
   return (
     <div>
-      <Header />
       <Dashboard />
     </div>
   )

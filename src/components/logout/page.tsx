@@ -43,9 +43,9 @@ const Logout: React.FC = () => {
 
   return (
     <div>
-      <button onClick={handleLogout} className="mt-4 bg-red-500 text-white rounded-md p-2 hover:bg-red-600 transition">
-        {translations[language]?.logout || "Logout"}
-      </button>
+       <button onClick={handleLogout} className="hover:text-amber-300 text-orange-50 p-2 rounded-md bg-orange-800 transition duration-200">
+      Logout
+    </button>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { PrismaClient as PrismaClient1 } from "../../../../../prisma/generated/client1"
+import { PrismaClient as PrismaClient1 } from "@prisma/client"
 import { randomBytes, createCipheriv } from "crypto"
 
 const prisma1 = new PrismaClient1()
