@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, ReactNode } from "react"
 import { BarChart, Menu, ShoppingBag } from "lucide-react"
 
 interface MenuItem {
@@ -13,6 +13,7 @@ interface MenuItem {
 }
 
 interface OrderItem {
+  [x: string]: ReactNode
   id: number
   name: string
   price: number
@@ -29,60 +30,64 @@ interface Order {
 export default function AdminDashboard() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [newItem, setNewItem] = useState({ name: "", price: 0, imageUrl: "" })
+  const [newItem, setNewItem] = useState({ name: "", price: 0, photo: null as File | null })
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [activeTab, setActiveTab] = useState("orders")
 
   useEffect(() => {
-    fetchMenu()
     fetchOrders()
   }, [])
 
-  async function fetchMenu() {
-    const res = await fetch("/api/v1/menu")
-    const data = await res.json()
-    setMenuItems(data)
-  }
-
   async function fetchOrders() {
     try {
-      const res = await fetch("/api/v1/orders")
+      const res = await fetch("/api/v1/fetchorders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
       if (!res.ok) {
         console.error("Failed to fetch orders", res.statusText)
         return
       }
+
       const data = await res.json()
       setOrders(data)
+      console.log("Orders Fetched ", data)
     } catch (error) {
       console.error("Error fetching orders:", error)
     }
   }
 
-  async function addMenuItem(e: React.FormEvent) {
-    e.preventDefault()
-    await fetch("/api/v1/menu", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newItem),
-    })
-    setNewItem({ name: "", price: 0, imageUrl: "" })
-    fetchMenu()
-  }
+  async function handleAddItem(event: React.FormEvent) {
+    event.preventDefault()
+    if (!newItem.name || !newItem.price || !newItem.photo) {
+      alert("Please provide all fields")
+      return
+    }
 
-  async function fetchOrderDetails(orderId: number) {
+    const formData = new FormData()
+    formData.append("name", newItem.name)
+    formData.append("price", newItem.price.toString())
+    formData.append("photo", newItem.photo) // Attach the file
+
     try {
-      const res = await fetch(`/api/v1/orders/${orderId}`)
+      const res = await fetch("/api/v1/addmenuitem", {
+        method: "POST",
+        body: formData, // Send form data directly
+      })
       if (!res.ok) {
-        console.error("Failed to fetch order details", res.statusText)
+        console.error("Failed to add item", res.statusText)
         return
       }
-      const data = await res.json()
-      setSelectedOrder(data)
+
+      alert("Item added successfully!")
+      setNewItem({ name: "", price: 0, photo: null })
     } catch (error) {
-      console.error("Error fetching order details:", error)
+      console.error("Error adding item:", error)
     }
   }
 
+
+  
   const renderOrders = () => (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
@@ -108,7 +113,7 @@ export default function AdminDashboard() {
               <td className="p-2">{order.items.length}</td>
               <td className="p-2">
                 <button
-                  onClick={() => fetchOrderDetails(order.id)}
+                  onClick={() => setSelectedOrder(order)}
                   className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                 >
                   View Details
@@ -124,6 +129,7 @@ export default function AdminDashboard() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-200">
+                <th className="p-2 text-left">No.</th>
                 <th className="p-2 text-left">Item</th>
                 <th className="p-2 text-left">Price</th>
                 <th className="p-2 text-left">Quantity</th>
@@ -131,19 +137,21 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {selectedOrder.items.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="p-2">{item.name}</td>
-                  <td className="p-2">${item.price.toFixed(2)}</td>
-                  <td className="p-2">{item.quantity}</td>
-                  <td className="p-2">${(item.price * item.quantity).toFixed(2)}</td>
-                </tr>
-              ))}
+            {selectedOrder.items.map((item, index) => (
+              <tr key={index} className="border-b">
+                <td className="p-2">{index + 1}</td>
+                <td className="p-2">{item.itemName}</td>
+                <td className="p-2">RS {item.price.toFixed(2)}</td>
+                <td className="p-2">{item.quantity}</td>
+                <td className="p-2">Rs {(item.price * item.quantity).toFixed(2)}</td>
+              </tr>
+            ))}
+
             </tbody>
           </table>
           <div className="mt-4 text-right">
             <strong>
-              Total: ${selectedOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
+              Total: RS {selectedOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
             </strong>
           </div>
         </div>
@@ -152,12 +160,13 @@ export default function AdminDashboard() {
   )
 
   const renderMenu = () => (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-xl font-semibold mb-4">Menu Management</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Add Menu Item</h3>
-          <form onSubmit={addMenuItem} className="space-y-4">
+    <div className="min-h-screen bg-gray-100 text-black">
+    
+    <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      {activeTab === "menu" && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Menu Management</h2>
+          <form onSubmit={handleAddItem} className="space-y-4">
             <input
               type="text"
               placeholder="Name"
@@ -173,10 +182,9 @@ export default function AdminDashboard() {
               className="w-full p-2 border rounded"
             />
             <input
-              type="text"
-              placeholder="Image URL"
-              value={newItem.imageUrl}
-              onChange={(e) => setNewItem({ ...newItem, imageUrl: e.target.value })}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setNewItem({ ...newItem, photo: e.target.files ? e.target.files[0] : null })}
               className="w-full p-2 border rounded"
             />
             <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
@@ -184,22 +192,11 @@ export default function AdminDashboard() {
             </button>
           </form>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Current Menu Items</h3>
-          <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.id} className="flex justify-between items-center border-b pb-2">
-                <span>{item.name}</span>
-                <span>${item.price.toFixed(2)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderSalesAnalysis = () => (
+      )}
+    </main>
+  </div>
+)
+const renderSalesAnalysis = () => (
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-xl font-semibold mb-4">Sales Analysis</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
