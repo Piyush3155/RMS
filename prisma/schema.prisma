@@ -7,29 +7,23 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
-model post {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  Int
 
-  @@index([authorId], map: "Post_authorId_fkey")
-}
-
-model profile {
-  id     Int     @id @default(autoincrement())
-  bio    String?
-  userId Int     @unique(map: "Profile_userId_key")
-}
 
 model Order {
   id        Int         @id @default(autoincrement())
   username  String
   items     OrderItem[] // This remains the same, but we will insert correctly
   createdAt DateTime    @default(now())
+}
+
+model Menu {
+  id          Int     @id @default(autoincrement())
+  itemName    String
+  price       Float
+  description String
+  imageUrl    String
+  category    String
+  createdAt   DateTime @default(now())
 }
 
 model OrderItem {

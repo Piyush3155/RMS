@@ -30,10 +30,9 @@ interface Order {
 export default function AdminDashboard() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [newItem, setNewItem] = useState({ name: "", price: 0, photo: null as File | null })
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [activeTab, setActiveTab] = useState("orders")
-
+  const [newItem, setNewItem] = useState({ name: "", price: 0, photo: null as File | null, description: "", category: "" });
   useEffect(() => {
     fetchOrders()
   }, [])
@@ -57,36 +56,40 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleAddItem(event: React.FormEvent) {
-    event.preventDefault()
-    if (!newItem.name || !newItem.price || !newItem.photo) {
-      alert("Please provide all fields")
-      return
+  
+  const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+  
+    if (!newItem.name || !newItem.price || !newItem.photo || !newItem.description || !newItem.category) {
+      alert("Please provide all fields");
+      return;
     }
-
-    const formData = new FormData()
-    formData.append("name", newItem.name)
-    formData.append("price", newItem.price.toString())
-    formData.append("photo", newItem.photo) // Attach the file
-
+  
     try {
+      const formData = new FormData();
+      formData.append("photo", newItem.photo); // 🛠️ Fix key to match backend
+      formData.append("name", newItem.name);
+      formData.append("price", newItem.price.toString());
+      formData.append("description", newItem.description);
+      formData.append("category", newItem.category);
+  
       const res = await fetch("/api/v1/addmenuitem", {
         method: "POST",
-        body: formData, // Send form data directly
-      })
+        body: formData,
+      });
+  
       if (!res.ok) {
-        console.error("Failed to add item", res.statusText)
-        return
+        console.error("Failed to add item", res.statusText);
+        return;
       }
-
-      alert("Item added successfully!")
-      setNewItem({ name: "", price: 0, photo: null })
+  
+      alert("Item added successfully!");
+      setNewItem({ name: "", price: 0, photo: null, description: "", category: "" });
     } catch (error) {
-      console.error("Error adding item:", error)
+      console.error("Error adding item:", error);
     }
-  }
-
-
+  };
+  
   
   const renderOrders = () => (
     <div className="bg-white shadow rounded-lg p-6">
@@ -161,9 +164,7 @@ export default function AdminDashboard() {
 
   const renderMenu = () => (
     <div className="min-h-screen bg-gray-100 text-black">
-    
-    <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      {activeTab === "menu" && (
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Menu Management</h2>
           <form onSubmit={handleAddItem} className="space-y-4">
@@ -178,13 +179,26 @@ export default function AdminDashboard() {
               type="number"
               placeholder="Price"
               value={newItem.price}
-              onChange={(e) => setNewItem({ ...newItem, price: Number.parseFloat(e.target.value) })}
+              onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
               className="w-full p-2 border rounded"
             />
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setNewItem({ ...newItem, photo: e.target.files ? e.target.files[0] : null })}
+              onChange={(e) => setNewItem({ ...newItem, photo: e.target.files?.[0] || null })}
+              className="w-full p-2 border rounded"
+            />
+            <textarea
+              placeholder="Description"
+              value={newItem.description}
+              onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              className="w-full p-2 border rounded"
+            />
+            <input
+              type="text"
+              placeholder="Category"
+              value={newItem.category}
+              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
               className="w-full p-2 border rounded"
             />
             <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
@@ -192,9 +206,8 @@ export default function AdminDashboard() {
             </button>
           </form>
         </div>
-      )}
-    </main>
-  </div>
+      </main>
+    </div>
 )
 const renderSalesAnalysis = () => (
     <div className="bg-white shadow rounded-lg p-6">
@@ -229,7 +242,7 @@ const renderSalesAnalysis = () => (
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold">Admin Dashboard</h1>
+                <h1 className="text-xl ">BITE & CO</h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <button
