@@ -50,6 +50,7 @@ export default function AdminDashboard() {
 
       const data = await res.json()
       setOrders(data)
+      console.log(data);
       console.log("Orders Fetched ", data)
     } catch (error) {
       console.error("Error fetching orders:", error)
@@ -103,7 +104,7 @@ export default function AdminDashboard() {
           <tr className="bg-gray-100">
             <th className="p-2 text-left">Order ID</th>
             <th className="p-2 text-left">Username</th>
-            <th className="p-2 text-left">Items</th>
+            <th className="p-2 text-left">Items</th>            
             <th className="p-2 text-left">Actions</th>
           </tr>
         </thead>
@@ -160,7 +161,6 @@ export default function AdminDashboard() {
       )}
     </div>
   )
-
   const renderMenu = () => (
     <div className="min-h-screen bg-gray-100 text-black">
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -193,13 +193,23 @@ export default function AdminDashboard() {
               onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
               className="w-full p-2 border rounded"
             />
-            <input
-              type="text"
-              placeholder="Category"
+            <select
               value={newItem.category}
               onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-              className="w-full p-2 border rounded"
-            />
+              className="w-full p-2 border rounded bg-white"
+            >
+              <option value="" disabled>Select Category</option>
+              <option value="Veg">Veg</option>
+              <option value="Non-Veg">Non-Veg</option>
+              <option value="Drinks">Drinks</option>
+              <option value="Rice">Rice</option>
+              <option value="Soup">Soup</option>
+              <option value="Main Course">Main Course</option>
+              <option value="Starter">Starter</option>
+              <option value="Dessert">Dessert</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Fast Food">Fast Food</option>
+            </select>
             <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
               Add Item
             </button>
@@ -207,7 +217,8 @@ export default function AdminDashboard() {
         </div>
       </main>
     </div>
-)
+  );
+  
 const renderSalesAnalysis = () => (
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-xl font-semibold mb-4">Sales Analysis</h2>

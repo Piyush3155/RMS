@@ -16,6 +16,13 @@ model Order {
   createdAt DateTime    @default(now())
 }
 
+model Order2 {
+  id          Int      @id @default(autoincrement())
+  tableNumber Int
+  items       String
+  createdAt   DateTime @default(now())
+}
+
 model Menu {
   id          Int     @id @default(autoincrement())
   itemName    String
@@ -44,15 +51,5 @@ model user {
   name     String?
 }
 
-model Product {
-  id        Int      @id @default(autoincrement())
-  name      String
-  price     Float
-  quantity  Int
-  imageUrl  String
-  userId    Int      // Add userId to associate with a user
-  createdAt DateTime @default(now())
 
-  @@index([name], map: "Product_name_index")
-}
 

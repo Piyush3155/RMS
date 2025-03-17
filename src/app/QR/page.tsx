@@ -18,7 +18,8 @@ export default function QRCodeGenerator() {
         <div key={tableNo} className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-bold text-center">Table {tableNo}</h3>
           {origin && (
-            <QRCodeCanvas value={`${origin}/dash?table=${tableNo}`} size={150} />
+            <QRCodeCanvas value={`${origin}/orders?table=${tableNo}`} size={150} />
+            
           )}
         </div>
       ))}

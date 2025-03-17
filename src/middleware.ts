@@ -22,5 +22,5 @@ export function middleware(req: NextRequest) {
 
 // Apply middleware to protected routes only
 export const config = {
-  matcher: ["/user/:path*", "/admin/:path*", "/manager/:path*", "/dash/:path*"],
+  matcher: ["/user/:path*", "/admin/:path*", "/dash/:path*"],
 };

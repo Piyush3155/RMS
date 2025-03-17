@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
           select: {
             itemName: true,
             price: true,
+            imageUrl:true,
             quantity: true,
           },
         },
