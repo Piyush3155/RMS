@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { MinusCircle, PlusCircle, ShoppingBag } from "lucide-react"
+import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft, Coffee, Utensils, Clock, Check } from "lucide-react"
 
 interface MenuItem {
   id: number
@@ -23,6 +23,10 @@ export default function OrderPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [showCart, setShowCart] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     if (table) {
@@ -36,6 +40,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     const fetchMenu = async () => {
+      setLoading(true)
       try {
         const res = await fetch("/api/v1/menu")
         if (!res.ok) throw new Error("Failed to fetch menu")
@@ -43,11 +48,23 @@ export default function OrderPage() {
         setMenu(data)
       } catch (error) {
         console.error(error)
+      } finally {
+        setLoading(false)
       }
     }
 
     fetchMenu()
   }, [])
+
+  const categories = ["all", ...Array.from(new Set(menu.map((item) => item.category)))]
+
+  const filteredMenu = menu.filter((item) => {
+    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
+    const matchesSearch =
+      item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
@@ -104,10 +121,13 @@ export default function OrderPage() {
       })
 
       if (res.ok) {
-        alert("Order placed successfully!")
-        setCart([])
-        console.log(orderData);
-        setShowCart(false)
+        setOrderPlaced(true)
+        setTimeout(() => {
+          setCart([])
+          setOrderPlaced(false)
+          setShowCart(false)
+        }, 3000)
+        console.log(orderData)
       } else {
         alert("Failed to place order!")
       }
@@ -117,16 +137,30 @@ export default function OrderPage() {
     }
   }
 
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "drinks":
+        return <Coffee size={18} />
+      default:
+        return <Utensils size={18} />
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-amber-100">
       {/* Header */}
-      <header className="bg-amber-800 text-white p-4 shadow-md">
+      <header className="bg-gradient-to-r from-amber-800 to-amber-700 text-white p-4 shadow-lg sticky top-0 z-40">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">BITE & CO</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">BITE & CO</h1>
+            {selectedTable && (
+              <span className="bg-amber-600 px-3 py-1 rounded-full text-sm font-medium">Table #{selectedTable}</span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCart(!showCart)}
-              className="relative p-2 bg-amber-700 rounded-full hover:bg-amber-600 transition-colors"
+              className="relative p-2 bg-amber-600 rounded-full hover:bg-amber-500 transition-colors"
             >
               <ShoppingBag className="h-6 w-6" />
               {getCartItemCount() > 0 && (
@@ -140,104 +174,228 @@ export default function OrderPage() {
       </header>
 
       <main className="container mx-auto p-4 md:p-6">
-        {/* Menu Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-amber-900">Our Menu</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menu.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-              >
-                <img
-                  src={item.imageUrl || "/placeholder.svg"}
-                  alt={item.itemName}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold text-amber-900">{item.itemName}</h3>
-                    <span className="font-bold text-amber-800">${item.price.toFixed(2)}</span>
-                  </div>
-                  <p className="text-gray-600 text-sm mt-1 line-clamp-2">{item.description}</p>
+        {/* Search and Filter */}
+        <div className="mb-6 sticky top-[72px] z-30 bg-white rounded-xl shadow-md p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search menu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-3 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              />
+            </div>
+            <div className="overflow-x-auto pb-2">
+              <div className="flex gap-2 min-w-max">
+                {categories.map((category) => (
                   <button
-                    onClick={() => addToCart(item)}
-                    className="mt-3 w-full bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-md transition-colors"
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full whitespace-nowrap flex items-center gap-2 ${
+                      selectedCategory === category
+                        ? "bg-amber-600 text-white"
+                        : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                    }`}
                   >
-                    Add to Order
+                    {category !== "all" && getCategoryIcon(category)}
+                    {category === "all" ? "All Items" : category}
                   </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Cart Overlay */}
-        {showCart && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
-            <div className="bg-white w-full max-w-md h-full overflow-y-auto">
-              <div className="p-4 bg-amber-800 text-white flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Your Order</h2>
-                <button onClick={() => setShowCart(false)} className="text-white hover:text-amber-200">
-                  ✕
-                </button>
-              </div>
-
-              <div className="p-4">
-                {cart.length === 0 ? (
-                  <p className="text-center py-8 text-gray-500">Your cart is empty</p>
-                ) : (
-                  <>
-                    <ul className="divide-y">
-                      {cart.map((item) => (
-                        <li key={item.id} className="py-4 flex items-center gap-4">
-                          <img
-                            src={item.imageUrl || "/placeholder.svg"}
-                            alt={item.itemName}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-medium">{item.itemName}</h3>
-                            <p className="text-amber-800 font-semibold">${item.price.toFixed(2)}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="text-amber-700 hover:text-amber-900"
-                            >
-                              <MinusCircle size={20} />
-                            </button>
-                            <span className="w-8 text-center font-medium">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="text-amber-700 hover:text-amber-900"
-                            >
-                              <PlusCircle size={20} />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="mt-6 pt-4 border-t">
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Total:</span>
-                        <span>${getCartTotal().toFixed(2)}</span>
-                      </div>
-
-                      <button
-                        onClick={placeOrder}
-                        className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md font-medium transition-colors"
-                      >
-                        Place Order
-                      </button>
-                    </div>
-                  </>
-                )}
+                ))}
               </div>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Menu Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-6 text-amber-900 flex items-center gap-2">
+            <Utensils className="text-amber-700" />
+            Our Menu
+            {loading && <Clock className="animate-spin ml-2 text-amber-600" size={20} />}
+          </h2>
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md h-80 animate-pulse">
+                  <div className="w-full h-48 bg-gray-200"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full"></div>
+                    <div className="h-8 bg-gray-200 rounded w-full mt-2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredMenu.length === 0 ? (
+            <div className="bg-white rounded-lg p-8 text-center shadow-md">
+              <Utensils className="mx-auto text-amber-400 mb-3" size={48} />
+              <h3 className="text-xl font-semibold text-amber-900 mb-2">No items found</h3>
+              <p className="text-gray-600">
+                {searchQuery ? "Try a different search term" : "No items available in this category"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMenu.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={item.imageUrl || "/placeholder.svg"}
+                      alt={item.itemName}
+                      className="w-full h-full object-cover transition-transform hover:scale-105"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                        {item.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-amber-900">{item.itemName}</h3>
+                      <span className="font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">
+                        ${item.price.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{item.description}</p>
+                    <button
+                      onClick={() => {
+                        addToCart(item)
+                        // Optional: Show cart briefly when adding first item
+                        if (getCartItemCount() === 0) setShowCart(true)
+                      }}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <PlusCircle size={18} />
+                      Add to Order
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Cart Overlay */}
+        <div
+          className={`fixed inset-0 bg-black transition-opacity duration-300 z-50 ${
+            showCart ? "bg-opacity-50 pointer-events-auto" : "bg-opacity-0 pointer-events-none"
+          }`}
+          onClick={() => setShowCart(false)}
+        >
+          <div
+            className={`fixed top-0 right-0 bg-white w-full max-w-md h-full overflow-y-auto shadow-xl transition-transform duration-300 transform ${
+              showCart ? "translate-x-0" : "translate-x-full"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 bg-gradient-to-r from-amber-800 to-amber-700 text-white flex justify-between items-center sticky top-0 z-10">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <ShoppingBag size={20} />
+                Your Order {selectedTable && `(Table #${selectedTable})`}
+              </h2>
+              <button
+                onClick={() => setShowCart(false)}
+                className="text-white hover:text-amber-200 p-1 rounded-full hover:bg-amber-600/50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              {orderPlaced ? (
+                <div className="text-center py-12 bg-green-50 rounded-lg border border-green-100 my-4">
+                  <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <Check className="text-green-600" size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-green-800 mb-2">Order Placed Successfully!</h3>
+                  <p className="text-green-600">Your order is being prepared</p>
+                </div>
+              ) : cart.length === 0 ? (
+                <div className="text-center py-12 bg-amber-50 rounded-lg my-4">
+                  <ShoppingBag className="mx-auto text-amber-300 mb-3" size={48} />
+                  <h3 className="text-xl font-semibold text-amber-800 mb-2">Your cart is empty</h3>
+                  <p className="text-amber-600 mb-6">Add some delicious items to your order</p>
+                  <button
+                    onClick={() => setShowCart(false)}
+                    className="bg-amber-600 hover:bg-amber-700 text-white py-2 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto"
+                  >
+                    <ChevronLeft size={18} />
+                    Browse Menu
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-amber-50 p-3 rounded-lg mb-4 flex items-center gap-2">
+                    <Clock size={18} className="text-amber-600" />
+                    <p className="text-sm text-amber-800">Your order will be prepared as soon as you place it</p>
+                  </div>
+
+                  <ul className="divide-y divide-amber-100">
+                    {cart.map((item) => (
+                      <li key={item.id} className="py-4 flex items-center gap-4">
+                        <img
+                          src={item.imageUrl || "/placeholder.svg"}
+                          alt={item.itemName}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium text-amber-900">{item.itemName}</h3>
+                          <p className="text-amber-800 font-bold">${item.price.toFixed(2)}</p>
+                        </div>
+                        <div className="flex items-center gap-1 bg-amber-50 rounded-lg p-1">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="text-amber-700 hover:text-amber-900 p-1 hover:bg-amber-100 rounded-full"
+                          >
+                            <MinusCircle size={20} />
+                          </button>
+                          <span className="w-8 text-center font-bold">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="text-amber-700 hover:text-amber-900 p-1 hover:bg-amber-100 rounded-full"
+                          >
+                            <PlusCircle size={20} />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6 pt-4 border-t border-amber-100">
+                    <div className="flex justify-between text-lg font-bold mb-2">
+                      <span>Subtotal:</span>
+                      <span>${getCartTotal().toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-sm text-gray-600 mb-4">
+                      <span>Service Charge (10%):</span>
+                      <span>${(getCartTotal() * 0.1).toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-xl font-bold text-amber-900 mb-6 pt-2 border-t border-amber-100">
+                      <span>Total:</span>
+                      <span>${(getCartTotal() * 1.1).toFixed(2)}</span>
+                    </div>
+
+                    <button
+                      onClick={placeOrder}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Check size={20} />
+                      Place Order
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )

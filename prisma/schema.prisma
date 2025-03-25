@@ -20,9 +20,15 @@ model Order2 {
   id          Int      @id @default(autoincrement())
   tableNumber Int
   items       String
+  status      String   @default("pending")
   createdAt   DateTime @default(now())
 }
-
+model Admin {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  email    String  @unique
+  password String
+}
 model Menu {
   id          Int     @id @default(autoincrement())
   itemName    String

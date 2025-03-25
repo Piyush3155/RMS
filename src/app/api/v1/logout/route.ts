@@ -1,22 +1,18 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import { serialize } from "cookie";
 
-export async function POST(req: NextRequest) {
-  try {
-    const response = NextResponse.json({ message: "Logged out successfully" }, { status: 200 })
+export async function GET() {
+  const response = NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"));
 
-    // Clear the session cookie
-    response.cookies.set("session", "", {
+  response.headers.set(
+    "Set-Cookie",
+    serialize("auth_token", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      expires: new Date(0), // Expire cookie
       path: "/",
-      maxAge: 0,
     })
+  );
 
-    return response
-  } catch (error) {
-    console.error("Error logging out:", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
-  }
+  return response;
 }
-
