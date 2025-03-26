@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const username = req.cookies.get("username")?.value; // Get username from cookies
 
   // Public pages that don't require authentication
-  const publicRoutes = ["/login", "/register", "/"];
+  const publicRoutes = ["/login", "/register", "/manager"];
 
   // Allow access to public pages
   if (publicRoutes.includes(pathname)) {
