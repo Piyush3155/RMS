@@ -1,52 +1,10 @@
-// schema1.prisma
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL_1")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-
-model Order {
-  id        Int         @id @default(autoincrement())
-  username  String
-  items     OrderItem[] // This remains the same, but we will insert correctly
-  createdAt DateTime    @default(now())
-}
-
-model Order2 {
-  id          Int      @id @default(autoincrement())
-  tableNumber Int
-  items       String
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-}
-model Admin {
-  id       Int     @id @default(autoincrement())
-  name     String  @unique
-  email    String  @unique
-  password String
-}
-model Menu {
-  id          Int     @id @default(autoincrement())
-  itemName    String
-  price       Float
-  description String
-  imageUrl    String
-  category    String
-  createdAt   DateTime @default(now())
-}
-
-model OrderItem {
-  id       Int     @id @default(autoincrement())
-  order    Order   @relation(fields: [orderId], references: [id])
-  orderId  Int
-  itemName String
-  price    Int
-  quantity Int
-  imageUrl String
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL_1")
 }
 
 model user {
@@ -57,5 +15,62 @@ model user {
   name     String?
 }
 
+model admin {
+  id       Int    @id @default(autoincrement())
+  name     String @unique(map: "Admin_name_key")
+  email    String @unique(map: "Admin_email_key")
+  password String
+}
 
+model kitchendashboard {
+  id          Int      @id @default(autoincrement())
+  tableNumber Int
+  items       String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+}
 
+model menu {
+  id          Int      @id @default(autoincrement())
+  itemName    String
+  price       Float
+  description String
+  imageUrl    String
+  category    String
+  createdAt   DateTime @default(now())
+}
+
+model order {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  username  String
+}
+
+model order2 {
+  id          Int      @id @default(autoincrement())
+  tableNumber Int
+  items       String
+  createdAt   DateTime @default(now())
+  status      String   @default("pending")
+}
+
+model orderanalytics {
+  id             Int      @id @default(autoincrement())
+  orderId        Int      @unique(map: "OrderAnalytics_orderId_key")
+  totalAmount    Float
+  totalItemsSold Int
+  topItemName    String
+  topItemCount   Int
+  createdAt      DateTime @default(now())
+}
+
+model orderitem {
+  id       Int    @id @default(autoincrement())
+  orderId  Int
+  quantity Int
+  imageUrl String
+  itemName String
+  price    Int
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+}

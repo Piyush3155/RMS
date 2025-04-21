@@ -153,7 +153,7 @@ export default function AdminDashboard() {
             <thead>
               <tr className="bg-gray-50 text-left border-b border-gray-200">
                 <th className="p-3 font-semibold text-gray-600 rounded-tl-lg">#ID</th>
-                <th className="p-3 font-semibold text-gray-600">Customer</th>
+                <th className="p-3 font-semibold text-gray-600">Table NO</th>
                 <th className="p-3 font-semibold text-gray-600">Items</th>
                 <th className="p-3 font-semibold text-gray-600 rounded-tr-lg text-right">Actions</th>
               </tr>

@@ -1,16 +1,20 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, type ReactNode } from "react"
-import { ChefHat, Trash2, Loader2, Clock, CheckCircle, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import Image from "next/image"
+import { ChefHat, Trash2, Loader2, Clock, CheckCircle, AlertCircle, MoreHorizontal } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 type OrderStatus = "received" | "preparing" | "completed" | "pending"
 
 interface OrderItem {
-  [x: string]: ReactNode
   id: string
-  name: string
+  itemName: string
   quantity: number
 }
 
@@ -42,83 +46,22 @@ const updateOrderStatusAPI = async (orderId: string, newStatus: OrderStatus) => 
   return res.json()
 }
 
-const Badge = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded text-black ${className}`}>
-    {children}
-  </span>
-)
-
-const Button = ({
-  children,
-  onClick,
-  variant = "default",
-  className = "",
-}: {
-  children: React.ReactNode
-  onClick?: () => void
-  variant?: "default" | "outline" | "destructive"
-  className?: string
-}) => {
-  const variantClasses = {
-    default: "bg-[#FFB300] text-black hover:bg-[#FFA000] transition",
-    outline: "border border-[#FFA000] text-black hover:bg-[#FFD54F] transition",
-    destructive: "bg-[#D84315] text-white hover:bg-[#BF360C] transition",
-  }
-
-  return (
-    <button onClick={onClick} className={`px-4 py-2 rounded-lg shadow-md ${variantClasses[variant]} ${className}`}>
-      {children}
-    </button>
-  )
-}
-
-const Card = ({ children, status }: { children: React.ReactNode; status: OrderStatus }) => {
-  const statusColors = {
-    pending: "bg-[#E0E0E0] border-gray-500",
-    received: "bg-[#FFF8E1] border-yellow-600",
-    preparing: "bg-[#FFE082] border-orange-500",
-    completed: "bg-[#C5E1A5] border-green-600",
-  }
-  return (
-    <div className={`border rounded-lg shadow-md overflow-hidden text-black transition ${statusColors[status]}`}>
-      {children}
-    </div>
-  )
-}
-
-const CardHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="p-4 border-b bg-[#FFD54F] text-black font-semibold">{children}</div>
-)
-
-const Table = ({ children }: { children: React.ReactNode }) => (
-  <table className="w-full border text-black">{children}</table>
-)
-
-const TableHead = ({ children }: { children: React.ReactNode }) => (
-  <th className="border px-4 py-2 text-left">{children}</th>
-)
-
-const TableRow = ({ children }: { children: React.ReactNode }) => <tr className="border">{children}</tr>
-
-const TableCell = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <td className={`border px-4 py-2 text-black ${className}`}>{children}</td>
-)
-
 export default function KitchenPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all")
-  const [currentDate, setCurrentDate] = useState<string>("") // Add state for current date
+  const [currentDate, setCurrentDate] = useState<string>("")
 
   useEffect(() => {
     // Set the current date on the client side
-    setCurrentDate(new Date().toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" }))
+    setCurrentDate(
+      new Date().toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    )
 
     fetchOrders()
       .then((data) => {
         setOrders(data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()))
         setLoading(false)
-        console.log(data)
       })
       .catch(console.error)
 
@@ -154,18 +97,35 @@ export default function KitchenPage() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
   }
 
-  const getStatusIcon = (status: OrderStatus) => {
+  const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
+      case "pending":
+        return (
+          <Badge variant="outline" className="bg-slate-100 text-slate-700">
+            New
+          </Badge>
+        )
       case "received":
-        return <Clock className="w-4 h-4 text-yellow-600" />
+        return (
+          <Badge variant="outline" className="bg-amber-100 text-amber-700">
+            Received
+          </Badge>
+        )
       case "preparing":
-        return <AlertCircle className="w-4 h-4 text-orange-500" />
+        return (
+          <Badge variant="outline" className="bg-orange-100 text-orange-700">
+            Preparing
+          </Badge>
+        )
       case "completed":
-        return <CheckCircle className="w-4 h-4 text-green-600" />
-      default:
-        return <Clock className="w-4 h-4 text-gray-500" />
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-700">
+            Completed
+          </Badge>
+        )
     }
   }
+
 
   const filteredOrders = activeTab === "all" ? orders : orders.filter((order) => order.status === activeTab)
 
@@ -175,140 +135,141 @@ export default function KitchenPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 text-black bg-[#FFF8E1] min-h-screen">
+    <div className="container mx-auto py-6 px-4 min-h-screen">
       <header className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ChefHat className="text-[#FFB300]" />
-            BITE & CO Kitchen
+           <Image src="/biteandco.png" alt="Logo" width={50} height={50} className="w-20 h-20"/>
+           
           </h1>
-          <div className="text-sm text-gray-700">
-            {currentDate} {/* Use the client-side date */}
-          </div>
+          <div className="text-sm text-muted-foreground">{currentDate}</div>
         </div>
 
-        <div className="flex overflow-x-auto gap-2 pb-2">
-          <Button
-            variant={activeTab === "all" ? "default" : "outline"}
-            onClick={() => setActiveTab("all")}
-            className="flex items-center gap-1"
-          >
-            All ({getOrderCount("all")})
-          </Button>
-          <Button
-            variant={activeTab === "received" ? "default" : "outline"}
-            onClick={() => setActiveTab("pending")}
-            className="flex items-center gap-1"
-          >
-            <Clock className="w-4 h-4" /> New ({getOrderCount("pending")})
-          </Button>
-          <Button
-            variant={activeTab === "preparing" ? "default" : "outline"}
-            onClick={() => setActiveTab("preparing")}
-            className="flex items-center gap-1"
-          >
-            <AlertCircle className="w-4 h-4" /> In Progress ({getOrderCount("preparing")})
-          </Button>
-          <Button
-            variant={activeTab === "completed" ? "default" : "outline"}
-            onClick={() => setActiveTab("completed")}
-            className="flex items-center gap-1"
-          >
-            <CheckCircle className="w-4 h-4" /> Completed ({getOrderCount("completed")})
-          </Button>
-        </div>
-      </header>
+        <Tabs
+          defaultValue="all"
+          value={activeTab}
+          onValueChange={(value: string) => setActiveTab(value as OrderStatus | "all")}
+        >
+          <TabsList className="grid grid-cols-4 mb-8 shadow-lg rounded-lg bg-white border border-slate-200">
+            <TabsTrigger value="all">All ({getOrderCount("all")})</TabsTrigger>
+            <TabsTrigger value="pending">
+              <Clock className="w-4 h-4 mr-2" /> New ({getOrderCount("pending")})
+            </TabsTrigger>
+            <TabsTrigger value="preparing">
+              <AlertCircle className="w-4 h-4 mr-2" /> In Progress ({getOrderCount("preparing")})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              <CheckCircle className="w-4 h-4 mr-2" /> Completed ({getOrderCount("completed")})
+            </TabsTrigger>
+          </TabsList>
 
-      {loading ? (
-        <div className="text-center text-xl p-12">
-          <Loader2 className="animate-spin mx-auto text-[#FFB300] mb-4" size={48} />
-          <p>Loading orders...</p>
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <div className="text-center p-12 bg-white rounded-lg shadow-md">
-          <ChefHat className="mx-auto text-[#FFB300] mb-4" size={48} />
-          <p className="text-xl font-medium">No orders found</p>
-          <p className="text-gray-600 mt-2">
-            {activeTab === "all"
-              ? "The kitchen is quiet right now. Time to prep!"
-              : `No ${activeTab} orders at the moment.`}
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredOrders.map((order) => (
-            <Card key={order.id} status={order.status}>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold">Table #{order.tableNumber}</span>
-                    <span className="text-xs text-gray-700">{formatTime(order.timestamp)}</span>
-                  </div>
-                  <Badge
+          <TabsContent value={activeTab}>
+            {loading ? (
+              <div className="text-center p-12">
+                <Loader2 className="animate-spin mx-auto text-amber-500 mb-4" size={48} />
+                <p className="text-muted-foreground">Loading orders...</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="text-center p-12 bg-white rounded-lg border shadow-sm">
+                <ChefHat className="mx-auto text-amber-500 mb-4" size={48} />
+                <p className="text-xl font-medium">No orders found</p>
+                <p className="text-muted-foreground mt-2">
+                  {activeTab === "all"
+                    ? "The kitchen is quiet right now. Time to prep!"
+                    : `No ${activeTab} orders at the moment.`}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredOrders.map((order) => (
+                  <Card
+                    key={order.id}
                     className={`
-                    flex items-center gap-1
-                    ${order.status === "pending" ? "bg-[#FFF8E1]" : ""}
-                    ${order.status === "preparing" ? "bg-[#FFE082]" : ""}
-                    ${order.status === "completed" ? "bg-[#C5E1A5]" : ""}
+                    overflow-hidden
+                    ${order.status === "pending" ? "border-l-4 border-l-slate-400" : ""}
+                    ${order.status === "received" ? "border-l-4 border-l-amber-400" : ""}
+                    ${order.status === "preparing" ? "border-l-4 border-l-orange-400" : ""}
+                    ${order.status === "completed" ? "border-l-4 border-l-green-400" : ""}
                   `}
                   >
-                    {getStatusIcon(order.status)}
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <div className="p-4">
-                <Table>
-                  <thead>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
-                    </TableRow>
-                  </thead>
-                  <tbody>
-                    {order.items.map((item, index) => (
-                      <TableRow key={`${order.id}-${index}`}>
-                        <TableCell>{item.itemName}</TableCell>
-                        <TableCell className="text-center font-medium">{item.quantity}</TableCell>
-                      </TableRow>
-                    ))}
-                  </tbody>
-                </Table>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-lg">Table #{order.tableNumber}</CardTitle>
+                          <span className="text-xs text-muted-foreground">{formatTime(order.timestamp)}</span>
+                        </div>
+                        {getStatusBadge(order.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead className="text-right">Qty</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {order.items.map((item, index) => (
+                            <TableRow key={`${order.id}-${index}`}>
+                              <TableCell>{item.itemName}</TableCell>
+                              <TableCell className="text-right font-medium">{item.quantity}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
 
-                {order.notes && (
-                  <div className="mt-3 p-2 bg-white bg-opacity-50 rounded text-sm italic">
-                    <span className="font-medium">Notes:</span> {order.notes}
-                  </div>
-                )}
+                      {order.notes && (
+                        <div className="mt-3 p-2 bg-slate-50 rounded-md text-sm italic">
+                          <span className="font-medium">Notes:</span> {order.notes}
+                        </div>
+                      )}
 
-                <div className="flex justify-between items-center mt-4">
-                  <div>
-                    {order.status === "pending" && (
-                      <Button
-                        onClick={() => handleUpdateStatus(order.id, "preparing")}
-                        className="flex items-center gap-1"
-                      >
-                        <AlertCircle className="w-4 h-4" /> Start Preparing
-                      </Button>
-                    )}
-                    {order.status === "preparing" && (
-                      <Button
-                        onClick={() => handleUpdateStatus(order.id, "completed")}
-                        className="flex items-center gap-1"
-                      >
-                        <CheckCircle className="w-4 h-4" /> Mark Complete
-                      </Button>
-                    )}
-                  </div>
-                  <Button variant="destructive" onClick={() => discardOrder(order.id)} className="flex items-center">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                      <div className="flex justify-between items-center mt-4">
+                        <div>
+                          {order.status === "pending" && (
+                            <Button
+                              onClick={() => handleUpdateStatus(order.id, "preparing")}
+                              className="flex items-center gap-1"
+                              variant="default"
+                            >
+                              <AlertCircle className="w-4 h-4 mr-1" /> Start Preparing
+                            </Button>
+                          )}
+                          {order.status === "preparing" && (
+                            <Button
+                              onClick={() => handleUpdateStatus(order.id, "completed")}
+                              className="flex items-center gap-1"
+                              variant="default"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" /> Mark Complete
+                            </Button>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => discardOrder(order.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete Order
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+            )}
+          </TabsContent>
+        </Tabs>
+      </header>
     </div>
   )
 }
