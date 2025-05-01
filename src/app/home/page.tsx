@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Clock, MapPin, Phone, Star, Utensils , CookingPot, Salad } from "lucide-react"
+import { Clock, MapPin, Phone, Star, Utensils , Salad } from "lucide-react"
 
 export default function RestaurantLanding() {
   return (
@@ -164,7 +164,7 @@ export default function RestaurantLanding() {
                     ))}
                   </div>
                   <blockquote className="mt-4">
-                    <p className="text-muted-foreground">"{testimonial.quote}"</p>
+                    <p className="text-muted-foreground">&quot;{testimonial.quote}&quot;</p>
                   </blockquote>
                   <p className="mt-4 font-medium">{testimonial.name}</p>
                 </div>
@@ -463,4 +463,3 @@ export default function RestaurantLanding() {
     </div>
   )
 }
-

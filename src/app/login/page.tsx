@@ -32,7 +32,7 @@ export default function LoginPage() {
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Login failed")
-
+      console.log("Login successful:", data)
       router.push("/manager")
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -55,12 +55,6 @@ export default function LoginPage() {
           className="object-cover object-center transition-transform duration-10000 hover:scale-105"
           priority
         />
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div className="text-white text-center p-8 max-w-xl">
-            <h1 className="text-5xl font-bold mb-4 drop-shadow-lg">Bites & Co.</h1>
-            <p className="text-xl drop-shadow-md">Culinary excellence meets modern management</p>
-          </div>
-        </div>
       </div>
 
       {/* Right Side Login with Content */}
@@ -69,10 +63,10 @@ export default function LoginPage() {
           {/* Logo and Welcome */}
           <div className="mb-10 text-center">
             <div className="flex items-center justify-center mb-4">
-              <Coffee size={32} className="text-amber-600 mr-2" />
-              <h2 className="text-3xl font-bold text-amber-800">Bites & Co.</h2>
+              <Coffee size={32} className="text-amber-400 mr-2" />
+              <h2 className="text-3xl font-bold text-amber-800 font-serif">Bites & Co.</h2>
             </div>
-            <p className="text-gray-600">Welcome back! Please log in to your admin account.</p>
+            <p className="text-gray-600">Welcome back! Please log in to your account.</p>
           </div>
 
           {/* Login Form */}
@@ -144,8 +138,8 @@ export default function LoginPage() {
           <div className="text-center mt-8">
             <p className="text-sm text-gray-600">
               Need assistance?{" "}
-              <a href="#" className="font-medium text-amber-700 hover:text-amber-800 hover:underline">
-                Contact Support
+              <a href="7019450720" className="font-medium text-amber-700 hover:text-amber-800 hover:underline">
+                Contact Support Team
               </a>
             </p>
           </div>

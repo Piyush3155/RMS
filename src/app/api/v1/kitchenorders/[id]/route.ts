@@ -5,9 +5,8 @@ import { prisma } from "@/lib/prisma";
 const allowedStatuses = ["pending", "preparing", "completed"];
 
 // PUT /api/v1/kitchenorders/[id]
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
-  const { params } = context;
-  const orderId = params.id;
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id: orderId } = await context.params;
 
   if (!orderId) {
     return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
@@ -32,7 +31,7 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
 
     console.log("Updating order with ID:", id, "to status:", status);
 
-    const updatedOrder = await prisma.kitchenDashboard.update({
+    const updatedOrder = await prisma.kitchendashboard.update({
       where: { id },
       data: { status },
     });
@@ -46,11 +45,10 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
     return NextResponse.json({ error: "Failed to update status" }, { status: 500 });
   }
 }
-
 // DELETE /api/v1/kitchenorders/[id]
-export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
-  const { params } = context;
-  const orderId = params.id;
+// DELETE /api/v1/kitchenorders/[id]
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id: orderId } = await context.params;
 
   if (!orderId) {
     return NextResponse.json({ error: "Order ID is required" }, { status: 400 });
@@ -64,7 +62,7 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
   try {
     console.log(`Deleting order with ID: ${id}`);
 
-    await prisma.kitchenDashboard.delete({
+    await prisma.kitchendashboard.delete({
       where: { id },
     });
 
@@ -74,3 +72,4 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     return NextResponse.json({ error: "Failed to delete order" }, { status: 500 });
   }
 }
+

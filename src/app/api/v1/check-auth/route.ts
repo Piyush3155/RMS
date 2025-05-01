@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   try {
     const decoded = verify(token, SECRET_KEY);
     return NextResponse.json({ success: true, admin: decoded });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 }

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       });
 
       // Insert into kitchenDashboard table
-      const kitchenOrder = await prisma.kitchenDashboard.create({
+      const kitchenOrder = await prisma.kitchendashboard.create({
         data: {
           id: order.id, // Use the ID from the order2 table
           tableNumber: parseInt(table),

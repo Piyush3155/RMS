@@ -8,21 +8,21 @@ export async function GET() {
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday
     const monthStart = startOfMonth(new Date());
 
-    const [todaySales] = await prisma.$queryRawUnsafe<any[]>(`
+    const [todaySales] = await prisma.$queryRawUnsafe<{ total: number }[]>(`
       SELECT SUM(oi.price * oi.quantity) as total
       FROM OrderItem oi
       JOIN \`Order\` o ON oi.orderId = o.id
       WHERE o.createdAt >= ?
     `, today);
 
-    const [weeklySales] = await prisma.$queryRawUnsafe<any[]>(`
+    const [weeklySales] = await prisma.$queryRawUnsafe<{ total: number }[]>(`
       SELECT SUM(oi.price * oi.quantity) as total
       FROM OrderItem oi
       JOIN \`Order\` o ON oi.orderId = o.id
       WHERE o.createdAt >= ?
     `, weekStart);
 
-    const [monthlySales] = await prisma.$queryRawUnsafe<any[]>(`
+    const [monthlySales] = await prisma.$queryRawUnsafe<{ total: number }[]>(`
       SELECT SUM(oi.price * oi.quantity) as total
       FROM OrderItem oi
       JOIN \`Order\` o ON oi.orderId = o.id

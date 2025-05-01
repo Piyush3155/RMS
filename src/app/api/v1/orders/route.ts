@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const topItem = Object.entries(itemFrequency).sort((a, b) => b[1] - a[1])[0];
 
     // 3. Create OrderAnalytics entry
-    await prisma.orderAnalytics.create({
+    await prisma.orderanalytics.create({
       data: {
         orderId: order.id,
         totalAmount,

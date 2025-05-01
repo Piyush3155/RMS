@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const username = req.cookies.get("username")?.value; // Get username from cookies
 
   // Public pages that don't require authentication
-  const publicRoutes = ["/login", "/register", "/manager"];
+  const publicRoutes = ["/login"];
 
   // Allow access to public pages
   if (publicRoutes.includes(pathname)) {
@@ -22,5 +22,5 @@ export function middleware(req: NextRequest) {
 
 // Apply middleware to protected routes only
 export const config = {
-  matcher: ["/user/:path*", "/dash/:path*"],
+  matcher: ["/user/:path*", "/dash/:path*"], // Add more protected routes as needed,
 };

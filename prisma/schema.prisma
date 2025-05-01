@@ -44,6 +44,7 @@ model order {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   username  String
+  items     orderitem[]
 }
 
 model order2 {
@@ -73,4 +74,5 @@ model orderitem {
   price    Int
 
   @@index([orderId], map: "OrderItem_orderId_fkey")
+  order order[]
 }

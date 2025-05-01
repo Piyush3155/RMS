@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const orders = await prisma.kitchenDashboard.findMany({
+    const orders = await prisma.kitchendashboard.findMany({
       orderBy: { createdAt: "desc" },
     });
 

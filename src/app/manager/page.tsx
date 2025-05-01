@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, type ReactNode } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import {
-  BarChart,
+  BarChartIcon,
   Menu,
   ShoppingBag,
   RefreshCw,
@@ -13,9 +13,17 @@ import {
   DollarSign,
   TrendingUp,
   Calendar,
-  Package,
-  Coffee,
+  LayoutDashboard,
+  ChevronDown,
+  Search,
+  Bell,
+  User,
+  Check,
+  X,
+  Clock,
 } from "lucide-react"
+import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface MenuItem {
   id: number
@@ -39,9 +47,19 @@ interface Order {
   items: OrderItem[]
 }
 
+interface Notification {
+  id: number
+  title: string
+  message: string
+  time: string
+  read: boolean
+  type: "order" | "alert" | "info"
+}
+
 export default function AdminDashboard() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [] = useState<MenuItem[]>([])
   const [orders, setOrders] = useState<Order[]>([])
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [activeTab, setActiveTab] = useState("orders")
   const [newItem, setNewItem] = useState({
@@ -52,11 +70,111 @@ export default function AdminDashboard() {
     category: "",
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: 1,
+      title: "New Order",
+      message: "Order #1234 has been placed",
+      time: "5 min ago",
+      read: false,
+      type: "order",
+    },
+    {
+      id: 2,
+      title: "Low Stock Alert",
+      message: "Butter Chicken is running low on stock",
+      time: "1 hour ago",
+      read: false,
+      type: "alert",
+    },
+    {
+      id: 3,
+      title: "Payment Received",
+      message: "Payment of ₹1,250 received for Order #1230",
+      time: "3 hours ago",
+      read: true,
+      type: "info",
+    },
+    {
+      id: 4,
+      title: "New Review",
+      message: "A customer left a 5-star review",
+      time: "Yesterday",
+      read: true,
+      type: "info",
+    },
+  ])
+
+  const notificationRef = useRef<HTMLDivElement>(null)
+
+  // Mock sales data for charts
+  const dailySalesData = [
+    { day: "Mon", sales: 1200 },
+    { day: "Tue", sales: 1900 },
+    { day: "Wed", sales: 1500 },
+    { day: "Thu", sales: 2100 },
+    { day: "Fri", sales: 2400 },
+    { day: "Sat", sales: 3100 },
+    { day: "Sun", sales: 2900 },
+  ]
+
+  const monthlySalesData = [
+    { month: "Jan", sales: 25000, orders: 420 },
+    { month: "Feb", sales: 30000, orders: 510 },
+    { month: "Mar", sales: 28000, orders: 480 },
+    { month: "Apr", sales: 35000, orders: 590 },
+    { month: "May", sales: 32000, orders: 540 },
+    { month: "Jun", sales: 40000, orders: 670 },
+  ]
+  
+  const topSellingItems = [
+    { name: "Butter Chicken", sold: 124, revenue: 24800 },
+    { name: "Paneer Tikka", sold: 98, revenue: 17640 },
+    { name: "Chicken Biryani", sold: 87, revenue: 17400 },
+    { name: "Masala Dosa", sold: 76, revenue: 11400 },
+    { name: "Gulab Jamun", sold: 65, revenue: 6500 },
+  ]
+
+  const salesData = {
+    dailyTotal: 12000,
+    weeklyTotal: 84000,
+    monthlyTotal: 360000,
+  }
 
   useEffect(() => {
     fetchOrders()
+
+    // Close notifications panel when clicking outside
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
   }, [])
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredOrders(orders)
+    } else {
+      const query = searchQuery.toLowerCase()
+      const filtered = orders.filter(
+        (order) =>
+          order.id.toString().includes(query) ||
+          order.username.toLowerCase().includes(query) ||
+          order.items.some((item) => item.itemName?.toString().toLowerCase().includes(query)),
+      )
+      setFilteredOrders(filtered)
+    }
+  }, [searchQuery, orders])
+
+  // Keeping the original fetchOrders function intact
   async function fetchOrders() {
     setIsLoading(true)
     try {
@@ -71,6 +189,7 @@ export default function AdminDashboard() {
 
       const data = await res.json()
       setOrders(data)
+      setFilteredOrders(data)
       console.log("Orders Fetched ", data)
     } catch (error) {
       console.error("Error fetching orders:", error)
@@ -79,6 +198,8 @@ export default function AdminDashboard() {
     }
   }
 
+  
+  // Keeping the original handleAddItem function intact
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -105,6 +226,18 @@ export default function AdminDashboard() {
         return
       }
 
+      // Add notification after successful API call
+      const newNotification = {
+        id: Date.now(),
+        title: "Menu Item Added",
+        message: `${newItem.name} has been added to the menu`,
+        time: "Just now",
+        read: false,
+        type: "info" as const,
+      }
+
+      setNotifications((prev) => [newNotification, ...prev])
+
       alert("Item added successfully!")
       setNewItem({ name: "", price: 0, photo: null, description: "", category: "" })
     } catch (error) {
@@ -112,37 +245,55 @@ export default function AdminDashboard() {
     }
   }
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "Veg":
-        return <span className="text-green-500">●</span>
-      case "Non-Veg":
-        return <span className="text-red-500">●</span>
-      case "Drinks":
-        return <Coffee size={16} />
-      default:
-        return <Package size={16} />
-    }
+  const markNotificationAsRead = (id: number) => {
+    setNotifications((prev) =>
+      prev.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
+    )
   }
 
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })))
+  }
+
+  const deleteNotification = (id: number) => {
+    setNotifications((prev) => prev.filter((notification) => notification.id !== id))
+  }
+
+  const renderOrderSkeletons = () => (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center space-x-4 p-3 border-b border-gray-100">
+          <Skeleton className="h-6 w-10" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-16" />
+          <div className="ml-auto">
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
   const renderOrders = () => (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <ShoppingBag className="text-blue-600" size={24} />
+          <ShoppingBag className="text-amber-500" size={24} />
           Customer Orders
         </h2>
         <button
           onClick={fetchOrders}
-          className="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+          className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
         >
           <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
           {isLoading ? "Loading..." : "Refresh"}
         </button>
       </div>
 
-      {orders.length === 0 && !isLoading ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
+      {isLoading ? (
+        renderOrderSkeletons()
+      ) : filteredOrders.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl">
           <FileText className="mx-auto text-gray-400 mb-3" size={48} />
           <p className="text-gray-500 text-lg">No orders found</p>
           <p className="text-gray-400 text-sm mt-1">New orders will appear here</p>
@@ -152,22 +303,22 @@ export default function AdminDashboard() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 text-left border-b border-gray-200">
-                <th className="p-3 font-semibold text-gray-600 rounded-tl-lg">#ID</th>
+                <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">#ID</th>
                 <th className="p-3 font-semibold text-gray-600">Table NO</th>
                 <th className="p-3 font-semibold text-gray-600">Items</th>
-                <th className="p-3 font-semibold text-gray-600 rounded-tr-lg text-right">Actions</th>
+                <th className="p-3 font-semibold text-gray-600 rounded-tr-xl text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((order, index) => (
+              {filteredOrders.map((order) => (
                 <tr
                   key={order.id}
-                  className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${selectedOrder?.id === order.id ? "bg-blue-50" : ""}`}
+                  className={`border-b border-gray-100 hover:bg-amber-50 transition-colors ${selectedOrder?.id === order.id ? "bg-amber-50" : ""}`}
                 >
                   <td className="p-3 font-medium">{order.id}</td>
                   <td className="p-3">{order.username}</td>
                   <td className="p-3">
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                    <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                       {order.items.length} {order.items.length === 1 ? "item" : "items"}
                     </span>
                   </td>
@@ -177,8 +328,8 @@ export default function AdminDashboard() {
                       className={`${
                         selectedOrder?.id === order.id
                           ? "bg-gray-200 text-gray-700"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
-                      } px-4 py-2 rounded-lg transition-colors flex items-center gap-1 ml-auto`}
+                          : "bg-amber-500 text-white hover:bg-amber-600"
+                      } px-4 py-2 rounded-xl transition-colors flex items-center gap-1 ml-auto`}
                     >
                       <Eye size={16} />
                       {selectedOrder?.id === order.id ? "Hide" : "View"}
@@ -202,11 +353,11 @@ export default function AdminDashboard() {
             <table className="w-full">
               <thead>
                 <tr className="bg-white text-left border-b border-gray-200">
-                  <th className="p-3 font-semibold text-gray-600 rounded-tl-lg">#</th>
+                  <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">#</th>
                   <th className="p-3 font-semibold text-gray-600">Item</th>
                   <th className="p-3 font-semibold text-gray-600 text-right">Price</th>
                   <th className="p-3 font-semibold text-gray-600 text-center">Qty</th>
-                  <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-lg">Total</th>
+                  <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-xl">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,11 +374,11 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-blue-50">
+                <tr className="bg-amber-50">
                   <td colSpan={4} className="p-3 text-right font-bold">
                     Order Total:
                   </td>
-                  <td className="p-3 text-right font-bold text-blue-700">
+                  <td className="p-3 text-right font-bold text-amber-700">
                     ₹{selectedOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
                   </td>
                 </tr>
@@ -241,126 +392,136 @@ export default function AdminDashboard() {
 
   const renderMenu = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div className="md:col-span-1 bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <div className="flex items-center gap-2 mb-6">
-        <Plus className="text-green-600" size={24} />
-        <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
-      </div>
-
-      <form onSubmit={handleAddItem} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-          <input
-            type="text"
-            placeholder="e.g. Butter Chicken"
-            value={newItem.name}
-            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-          />
+      <div className="md:col-span-1 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2 mb-6">
+          <Plus className="text-amber-500" size={24} />
+          <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-          <input
-            type="number"
-            placeholder="e.g. 299"
-            value={newItem.price}
-            onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-          <div className="relative border border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer">
-            {newItem.photo ? (
-              <div className="text-sm text-gray-600">
-                {newItem.photo.name} ({Math.round(newItem.photo.size / 1024)} KB)
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-            )}
+        <form onSubmit={handleAddItem} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
             <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setNewItem({ ...newItem, photo: e.target.files?.[0] || null })}
-              className="absolute inset-0 opacity-0 cursor-pointer"
+              type="text"
+              placeholder="e.g. Butter Chicken"
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            placeholder="Describe the dish..."
-            value={newItem.description}
-            onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            rows={3}
-          />
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+            <input
+              type="number"
+              placeholder="e.g. 299"
+              value={newItem.price}
+              onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-          <select
-            value={newItem.category}
-            onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+            <div className="relative border border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+              {newItem.photo ? (
+                <div className="text-sm text-gray-600">
+                  {newItem.photo.name} ({Math.round(newItem.photo.size / 1024)} KB)
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setNewItem({ ...newItem, photo: e.target.files?.[0] || null })}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              placeholder="Describe the dish..."
+              value={newItem.description}
+              onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={newItem.category}
+              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white"
+            >
+              <option value="" disabled>
+                Select Category
+              </option>
+              <option value="Veg">Veg</option>
+              <option value="Non-Veg">Non-Veg</option>
+              <option value="Drinks">Drinks</option>
+              <option value="Rice">Rice</option>
+              <option value="Soup">Soup</option>
+              <option value="Main Course">Main Course</option>
+              <option value="Starter">Starter</option>
+              <option value="Dessert">Dessert</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Fast Food">Fast Food</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-amber-500 text-white px-4 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
           >
-            <option value="" disabled>Select Category</option>
-            <option value="Veg">Veg</option>
-            <option value="Non-Veg">Non-Veg</option>
-            <option value="Drinks">Drinks</option>
-            <option value="Rice">Rice</option>
-            <option value="Soup">Soup</option>
-            <option value="Main Course">Main Course</option>
-            <option value="Starter">Starter</option>
-            <option value="Dessert">Dessert</option>
-            <option value="Snacks">Snacks</option>
-            <option value="Fast Food">Fast Food</option>
-          </select>
+            <Plus size={18} />
+            Add to Menu
+          </button>
+        </form>
+      </div>
+
+      <div className="md:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <Menu className="text-amber-500" size={24} />
+          Current Menu
+        </h2>
+
+        <div className="text-center py-12 bg-gray-50 rounded-xl">
+          <Menu className="mx-auto text-gray-400 mb-3" size={48} />
+          <p className="text-gray-500 text-lg">No menu items to display</p>
+          <p className="text-gray-400 text-sm mt-1">Add items using the form</p>
         </div>
-
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-        >
-          <Plus size={18} />
-          Add to Menu
-        </button>
-      </form>
-    </div>
-
-    <div className="md:col-span-2 bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        <Menu className="text-blue-600" size={24} />
-        Current Menu
-      </h2>
-
-      <div className="text-center py-12 bg-gray-50 rounded-lg">
-        <Menu className="mx-auto text-gray-400 mb-3" size={48} />
-        <p className="text-gray-500 text-lg">No menu items to display</p>
-        <p className="text-gray-400 text-sm mt-1">Add items using the form</p>
       </div>
     </div>
-  </div>
-    )
+  )
 
   const renderSalesAnalysis = () => (
     <div className="space-y-6">
-      <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+       <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <BarChart className="text-blue-600" size={24} />
+          <BarChartIcon className="text-amber-500" size={24} />
           Sales Overview
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+          {/* Daily Sales */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Today's Sales</h3>
-              <DollarSign className="text-blue-600" size={20} />
+              <h3 className="text-lg font-medium text-gray-700">
+                Today&apos;s Sales
+              </h3>
+              <div className="bg-amber-200 p-2 rounded-lg">
+                <DollarSign className="text-amber-600" size={20} />
+              </div>
             </div>
-            <p className="text-3xl font-bold text-blue-700 mt-2">₹12,459</p>
+            <p className="text-3xl font-bold text-amber-700 mt-2">
+              ₹{salesData.dailyTotal.toLocaleString()}
+            </p>
             <div className="flex items-center mt-2 text-sm">
               <TrendingUp className="text-green-500 mr-1" size={16} />
               <span className="text-green-600 font-medium">+12.5%</span>
@@ -368,12 +529,17 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-green-50 p-6 rounded-xl border border-green-100">
+          {/* Weekly Sales */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-700">Weekly Sales</h3>
-              <Calendar className="text-green-600" size={20} />
+              <div className="bg-amber-200 p-2 rounded-lg">
+                <Calendar className="text-amber-600" size={20} />
+              </div>
             </div>
-            <p className="text-3xl font-bold text-green-700 mt-2">₹86,320</p>
+            <p className="text-3xl font-bold text-amber-700 mt-2">
+              ₹{salesData.weeklyTotal.toLocaleString()}
+            </p>
             <div className="flex items-center mt-2 text-sm">
               <TrendingUp className="text-green-500 mr-1" size={16} />
               <span className="text-green-600 font-medium">+8.2%</span>
@@ -381,12 +547,17 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
+          {/* Monthly Sales */}
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-700">Monthly Sales</h3>
-              <BarChart className="text-purple-600" size={20} />
+              <div className="bg-amber-200 p-2 rounded-lg">
+                <BarChartIcon className="text-amber-600" size={20} />
+              </div>
             </div>
-            <p className="text-3xl font-bold text-purple-700 mt-2">₹342,590</p>
+            <p className="text-3xl font-bold text-amber-700 mt-2">
+              ₹{salesData.monthlyTotal.toLocaleString()}
+            </p>
             <div className="flex items-center mt-2 text-sm">
               <TrendingUp className="text-green-500 mr-1" size={16} />
               <span className="text-green-600 font-medium">+15.3%</span>
@@ -395,61 +566,123 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-
-      <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+    </div>
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">Sales Trend</h3>
-          <select className="bg-gray-50 border border-gray-300 text-gray-700 rounded-lg p-2 text-sm">
+          <select className="bg-gray-50 border border-gray-300 text-gray-700 rounded-xl p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
             <option>Last 7 days</option>
             <option>Last 30 days</option>
             <option>Last 90 days</option>
           </select>
         </div>
 
-        <div className="bg-gray-50 h-64 rounded-lg flex items-center justify-center border border-gray-200">
-          <div className="text-center">
-            <BarChart className="mx-auto text-gray-400 mb-2" size={32} />
-            <p className="text-gray-500">Sales chart will appear here</p>
-          </div>
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={dailySalesData}
+              margin={{
+                top: 5,
+                right: 30,
+                left: 20,
+                bottom: 5,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#fff",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+                formatter={(value) => [`₹${value}`, "Sales"]}
+              />
+              <Line
+                type="monotone"
+                dataKey="sales"
+                stroke="#f59e0b"
+                strokeWidth={3}
+                dot={{ fill: "#f59e0b", r: 6 }}
+                activeDot={{ fill: "#d97706", r: 8, stroke: "#fff", strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h3 className="text-xl font-bold text-gray-800 mb-4">Top Selling Items</h3>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 h-10 w-10 rounded-lg flex items-center justify-center">
-                    <Package className="text-blue-600" size={18} />
-                  </div>
-                  <div>
-                    <p className="font-medium">Item {i}</p>
-                    <p className="text-sm text-gray-500">Sold: {Math.floor(Math.random() * 100) + 20} units</p>
-                  </div>
-                </div>
-                <p className="font-bold text-blue-700">₹{(Math.random() * 1000 + 100).toFixed(2)}</p>
-              </div>
-            ))}
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={topSellingItems}
+                layout="vertical"
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={100} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #f59e0b",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                  formatter={(value, name) => [
+                    name === "sold" ? `${value} units` : `₹${value}`,
+                    name === "sold" ? "Units Sold" : "Revenue",
+                  ]}
+                />
+                <Bar dataKey="sold" fill="#fbbf24" name="Units Sold" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="revenue" fill="#f59e0b" name="Revenue (₹)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Transactions</h3>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Order #{Math.floor(Math.random() * 10000)}</p>
-                  <p className="text-sm text-gray-500">{new Date().toLocaleDateString()}</p>
-                </div>
-                <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                  Completed
-                </span>
-                <p className="font-bold text-blue-700">₹{(Math.random() * 1000 + 100).toFixed(2)}</p>
-              </div>
-            ))}
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Monthly Performance</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={monthlySalesData}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="month" />
+                <YAxis yAxisId="left" orientation="left" stroke="#f59e0b" />
+                <YAxis yAxisId="right" orientation="right" stroke="#78350f" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#fff",
+                    border: "1px solid #f59e0b",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                  formatter={(value, name) => [
+                    name === "sales" ? `₹${value}` : value,
+                    name === "sales" ? "Sales" : "Orders",
+                  ]}
+                />
+                <Bar yAxisId="left" dataKey="sales" fill="#f59e0b" name="Sales" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="right" dataKey="orders" fill="#78350f" name="Orders" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -457,58 +690,210 @@ export default function AdminDashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 text-black">
-      <nav className="bg-white shadow-md sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 text-black">
+      {/* Sidebar for larger screens */}
+      <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 hidden lg:block">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-amber-500">BITE & CO</h1>
+          <p className="text-sm text-gray-500 mt-1">Restaurant Management</p>
+        </div>
+
+        <div className="px-3 py-4">
+          <div className="space-y-1">
+            <button
+              onClick={() => setActiveTab("orders")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "orders" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <ShoppingBag size={18} />
+              <span className="font-medium">Orders</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("menu")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "menu" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <Menu size={18} />
+              <span className="font-medium">Menu</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("sales")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "sales" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <BarChartIcon size={18} />
+              <span className="font-medium">Sales</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Top navigation for mobile */}
+      <nav className="bg-white shadow-sm sticky top-0 z-10 lg:hidden">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-2xl font-bold text-blue-600">BITE & CO</h1>
-              </div>
-              <div className="hidden sm:ml-10 sm:flex sm:space-x-4">
-                <button
-                  onClick={() => setActiveTab("orders")}
-                  className={`${
-                    activeTab === "orders"
-                      ? "bg-blue-50 text-blue-700 border-blue-500"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-transparent"
-                  } px-4 py-2 rounded-lg text-sm font-medium border-l-4 transition-all flex items-center gap-2`}
-                >
-                  <ShoppingBag size={18} />
-                  Orders
-                </button>
-                <button
-                  onClick={() => setActiveTab("menu")}
-                  className={`${
-                    activeTab === "menu"
-                      ? "bg-blue-50 text-blue-700 border-blue-500"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-transparent"
-                  } px-4 py-2 rounded-lg text-sm font-medium border-l-4 transition-all flex items-center gap-2`}
-                >
-                  <Menu size={18} />
-                  Menu
-                </button>
-                <button
-                  onClick={() => setActiveTab("sales")}
-                  className={`${
-                    activeTab === "sales"
-                      ? "bg-blue-50 text-blue-700 border-blue-500"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-transparent"
-                  } px-4 py-2 rounded-lg text-sm font-medium border-l-4 transition-all flex items-center gap-2`}
-                >
-                  <BarChart size={18} />
-                  Sales
-                </button>
+                <h1 className="text-xl font-bold text-amber-500">BITE & CO</h1>
               </div>
             </div>
             <div className="flex items-center">
-              <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Admin</span>
+              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Admin</span>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Mobile tab navigation */}
+      <div className="bg-white shadow-sm sticky top-16 z-10 lg:hidden">
+        <div className="flex justify-between px-4">
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "orders" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <ShoppingBag size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Orders</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("menu")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "menu" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <Menu size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Menu</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("sales")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "sales" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <BarChartIcon size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Sales</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Top bar for desktop */}
+      <div className="hidden lg:block lg:pl-64">
+        <div className="bg-white border-b border-gray-200 py-4 px-8 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <LayoutDashboard className="text-amber-500" size={20} />
+            <h2 className="text-xl font-semibold">
+              {activeTab === "orders" && "Orders Management"}
+              {activeTab === "menu" && "Menu Management"}
+              {activeTab === "sales" && "Sales Analytics"}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 w-64"
+              />
+            </div>
+
+            <div className="relative">
+              <button
+                className="relative p-2 rounded-full hover:bg-gray-100"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell size={20} className="text-gray-600" />
+                {notifications.some((n) => !n.read) && (
+                  <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div
+                  ref={notificationRef}
+                  className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50"
+                >
+                  <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-800">Notifications</h3>
+                    <button
+                      onClick={markAllNotificationsAsRead}
+                      className="text-xs text-amber-600 hover:text-amber-700"
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <Bell className="mx-auto text-gray-300 mb-2" size={24} />
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 ${!notification.read ? "bg-amber-50" : ""}`}
+                        >
+                          <div className="flex justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`h-2 w-2 rounded-full ${!notification.read ? "bg-amber-500" : "bg-gray-300"}`}
+                                ></div>
+                                <p className="font-medium text-gray-800">{notification.title}</p>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                              <div className="flex items-center text-xs text-gray-500 mt-2">
+                                <Clock size={12} className="mr-1" />
+                                {notification.time}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {!notification.read && (
+                                <button
+                                  onClick={() => markNotificationAsRead(notification.id)}
+                                  className="text-amber-600 hover:text-amber-700"
+                                >
+                                  <Check size={16} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => deleteNotification(notification.id)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                <User size={16} className="text-amber-600" />
+              </div>
+              <span className="font-medium text-sm">Admin</span>
+              <ChevronDown size={16} className="text-gray-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main className={`p-4 sm:p-6 lg:p-8 ${activeTab === "sales" ? "max-w-7xl" : ""} mx-auto lg:pl-72`}>
         {activeTab === "orders" && renderOrders()}
         {activeTab === "menu" && renderMenu()}
         {activeTab === "sales" && renderSalesAnalysis()}
@@ -516,4 +901,3 @@ export default function AdminDashboard() {
     </div>
   )
 }
-
