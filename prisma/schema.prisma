@@ -53,6 +53,8 @@ model order2 {
   items       String
   createdAt   DateTime @default(now())
   status      String   @default("pending")
+  price       Float
+  orderId     Int?
 }
 
 model orderanalytics {
@@ -73,6 +75,19 @@ model orderitem {
   itemName String
   price    Int
 
+  order order @relation(fields: [orderId], references: [id])
+
   @@index([orderId], map: "OrderItem_orderId_fkey")
-  order order[]
+}
+
+model fetchorder{
+  id         Int      @id @default(autoincrement())
+  tableNumber Int
+  items       String
+  createdAt   DateTime @default(now())
+  price       Float
+  status      String   @default("pending")
+  orderId     Int?
+  quantity   Int? @default(1)
+  itemName   String?
 }

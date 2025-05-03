@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef, type ReactNode } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   BarChartIcon,
   Menu,
@@ -32,19 +32,16 @@ interface MenuItem {
   imageUrl: string
 }
 
-interface OrderItem {
-  [x: string]: ReactNode
-  id: number
-  name: string
-  price: number
-  quantity: number
-  imageUrl: string
-}
-
 interface Order {
   id: number
-  username: string
-  items: OrderItem[]
+  tableNumber: number
+  items: { itemName?: string }[]
+  createdAt: Date
+  price: number
+  status: string
+  orderId?: number
+  quantity?: number
+  itemName?: string
 }
 
 interface Notification {
@@ -128,7 +125,7 @@ export default function AdminDashboard() {
     { month: "May", sales: 32000, orders: 540 },
     { month: "Jun", sales: 40000, orders: 670 },
   ]
-  
+
   const topSellingItems = [
     { name: "Butter Chicken", sold: 124, revenue: 24800 },
     { name: "Paneer Tikka", sold: 98, revenue: 17640 },
@@ -167,7 +164,7 @@ export default function AdminDashboard() {
       const filtered = orders.filter(
         (order) =>
           order.id.toString().includes(query) ||
-          order.username.toLowerCase().includes(query) ||
+          order.tableNumber.toString().includes(query) ||
           order.items.some((item) => item.itemName?.toString().toLowerCase().includes(query)),
       )
       setFilteredOrders(filtered)
@@ -179,9 +176,10 @@ export default function AdminDashboard() {
     setIsLoading(true)
     try {
       const res = await fetch("/api/v1/fetchorders", {
-        method: "POST",
+        method: "GET",
         headers: { "Content-Type": "application/json" },
       })
+
       if (!res.ok) {
         console.error("Failed to fetch orders", res.statusText)
         return
@@ -190,7 +188,7 @@ export default function AdminDashboard() {
       const data = await res.json()
       setOrders(data)
       setFilteredOrders(data)
-      console.log("Orders Fetched ", data)
+      console.log("Orders Fetched", data)
     } catch (error) {
       console.error("Error fetching orders:", error)
     } finally {
@@ -198,7 +196,6 @@ export default function AdminDashboard() {
     }
   }
 
-  
   // Keeping the original handleAddItem function intact
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -259,6 +256,121 @@ export default function AdminDashboard() {
     setNotifications((prev) => prev.filter((notification) => notification.id !== id))
   }
 
+  // Modify the printBill function to delete the order after printing
+  const printBill = async (order: Order) => {
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+
+    const content = `
+      <html>
+        <head>
+          <title>Bill - Order #${order.id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+            .bill { max-width: 300px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .restaurant-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+            .contact { font-size: 12px; margin-bottom: 3px; }
+            .address { font-size: 12px; margin-bottom: 15px; }
+            .bill-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+            .bill-details { margin-bottom: 15px; font-size: 12px; }
+            .bill-details div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+            .items { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+            .item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+            .total { font-weight: bold; display: flex; justify-content: space-between; font-size: 14px; margin-top: 10px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="bill">
+            <div class="header">
+              <div class="restaurant-name">BITE & CO</div>
+              <div class="contact">Contact: +91 9874563210</div>
+              <div class="address">Address: Belgavi</div>
+            </div>
+            
+            <div class="bill-title">BILL RECEIPT</div>
+            
+            <div class="bill-details">
+              <div><span>Order #:</span> <span>${order.id}</span></div>
+              <div><span>Table:</span> <span>${order.tableNumber}</span></div>
+              <div><span>Date:</span> <span>${new Date(order.createdAt).toLocaleDateString()}</span></div>
+              <div><span>Time:</span> <span>${new Date(order.createdAt).toLocaleTimeString()}</span></div>
+            </div>
+            
+            <div class="items">
+              <div class="item" style="font-weight: bold;">
+                <span>Item</span>
+                <span>Qty</span>
+                <span>Price</span>
+              </div>
+              <div class="item">
+                <span>${order.itemName || order.items.map((item) => item.itemName).join(", ")}</span>
+                <span>${order.quantity || 1}</span>
+                <span>₹${order.price.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div class="total">
+              <span>Total Amount:</span>
+              <span>₹${order.price.toFixed(2)}</span>
+            </div>
+            
+            <div class="footer">
+              <p>Thank you for dining with us!</p>
+              <p>Visit again soon!</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    printWindow.document.open()
+    printWindow.document.write(content)
+    printWindow.document.close()
+
+    // Wait for content to load before printing
+    setTimeout(() => {
+      printWindow.print()
+
+      // Delete the order from the database after printing
+      deleteOrder(order.id)
+    }, 250)
+  }
+
+  // Add a function to delete the order from the database
+  const deleteOrder = async (orderId: number) => {
+    try {
+      const res = await fetch(`/api/v1/deleteorder?id=${orderId}`, {
+        method: "DELETE",
+      })
+
+      if (!res.ok) {
+        console.error("Failed to delete order", res.statusText)
+        return
+      }
+
+      // Remove the order from the local state
+      setOrders(orders.filter((order) => order.id !== orderId))
+      setFilteredOrders(filteredOrders.filter((order) => order.id !== orderId))
+      setSelectedOrder(null)
+
+      // Add notification for order deletion
+      const newNotification = {
+        id: Date.now(),
+        title: "Order Completed",
+        message: `Order #${orderId} has been completed and removed`,
+        time: "Just now",
+        read: false,
+        type: "info" as const,
+      }
+
+      setNotifications((prev) => [newNotification, ...prev])
+    } catch (error) {
+      console.error("Error deleting order:", error)
+    }
+  }
+
   const renderOrderSkeletons = () => (
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (
@@ -316,24 +428,26 @@ export default function AdminDashboard() {
                   className={`border-b border-gray-100 hover:bg-amber-50 transition-colors ${selectedOrder?.id === order.id ? "bg-amber-50" : ""}`}
                 >
                   <td className="p-3 font-medium">{order.id}</td>
-                  <td className="p-3">{order.username}</td>
+                  <td className="p-3">{order.tableNumber}</td>
                   <td className="p-3">
                     <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                      {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                      {order.itemName || order.items.map((item) => item.itemName).join(", ")}
                     </span>
                   </td>
                   <td className="p-3 text-right">
-                    <button
-                      onClick={() => setSelectedOrder(order.id === selectedOrder?.id ? null : order)}
-                      className={`${
-                        selectedOrder?.id === order.id
-                          ? "bg-gray-200 text-gray-700"
-                          : "bg-amber-500 text-white hover:bg-amber-600"
-                      } px-4 py-2 rounded-xl transition-colors flex items-center gap-1 ml-auto`}
-                    >
-                      <Eye size={16} />
-                      {selectedOrder?.id === order.id ? "Hide" : "View"}
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setSelectedOrder(order.id === selectedOrder?.id ? null : order)}
+                        className={`${
+                          selectedOrder?.id === order.id
+                            ? "bg-gray-200 text-gray-700"
+                            : "bg-amber-500 text-white hover:bg-amber-600"
+                        } px-4 py-2 rounded-xl transition-colors flex items-center gap-1`}
+                      >
+                        <Eye size={16} />
+                        {selectedOrder?.id === order.id ? "Hide" : "View"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -346,44 +460,67 @@ export default function AdminDashboard() {
         <div className="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-gray-800">Order #{selectedOrder.id} Details</h3>
-            <span className="text-gray-500 text-sm">Customer: {selectedOrder.username}</span>
+            <span className="text-gray-500 text-sm">Table: {selectedOrder.tableNumber}</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-white text-left border-b border-gray-200">
-                  <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">#</th>
-                  <th className="p-3 font-semibold text-gray-600">Item</th>
+                  <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">Item</th>
                   <th className="p-3 font-semibold text-gray-600 text-right">Price</th>
                   <th className="p-3 font-semibold text-gray-600 text-center">Qty</th>
-                  <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-xl">Total</th>
+                  <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-xl">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {selectedOrder.items.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100">
-                    <td className="p-3 font-medium">{index + 1}</td>
-                    <td className="p-3">{item.itemName}</td>
-                    <td className="p-3 text-right">₹{item.price.toFixed(2)}</td>
-                    <td className="p-3 text-center">
-                      <span className="bg-gray-200 px-2 py-1 rounded-lg">{item.quantity}</span>
-                    </td>
-                    <td className="p-3 text-right font-medium">₹{(item.price * item.quantity).toFixed(2)}</td>
-                  </tr>
-                ))}
+                <tr className="border-b border-gray-100">
+                  <td className="p-3">
+                    {selectedOrder.itemName || selectedOrder.items.map((item) => item.itemName).join(", ")}
+                  </td>
+                  <td className="p-3 text-right">₹{selectedOrder.price.toFixed(2)}</td>
+                  <td className="p-3 text-center">
+                    <span className="bg-gray-200 px-2 py-1 rounded-lg">{selectedOrder.quantity || 1}</span>
+                  </td>
+                  <td className="p-3 text-right">
+                    <span
+                      className={`px-2 py-1 rounded-lg ${
+                        selectedOrder.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : selectedOrder.status === "pending"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {selectedOrder.status}
+                    </span>
+                  </td>
+                </tr>
               </tbody>
               <tfoot>
                 <tr className="bg-amber-50">
-                  <td colSpan={4} className="p-3 text-right font-bold">
+                  <td colSpan={2} className="p-3 text-right font-bold">
                     Order Total:
                   </td>
-                  <td className="p-3 text-right font-bold text-amber-700">
-                    ₹{selectedOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
+                  <td colSpan={2} className="p-3 text-right font-bold text-amber-700">
+                    ₹{selectedOrder.price.toFixed(2)}
                   </td>
                 </tr>
               </tfoot>
             </table>
+          </div>
+
+          <div className="mt-4 flex justify-between items-center">
+            <button
+              onClick={() => printBill(selectedOrder)}
+              className="bg-amber-500 text-white px-4 py-2 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-1"
+            >
+              <FileText size={16} />
+              Print Bill
+            </button>
+            <span className="text-xs text-gray-500">
+              Created at: {new Date(selectedOrder.createdAt).toLocaleString()}
+            </span>
           </div>
         </div>
       )}
@@ -501,72 +638,64 @@ export default function AdminDashboard() {
 
   const renderSalesAnalysis = () => (
     <div className="space-y-6">
-       <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <BarChartIcon className="text-amber-500" size={24} />
-          Sales Overview
-        </h2>
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <BarChartIcon className="text-amber-500" size={24} />
+            Sales Overview
+          </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Daily Sales */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">
-                Today&apos;s Sales
-              </h3>
-              <div className="bg-amber-200 p-2 rounded-lg">
-                <DollarSign className="text-amber-600" size={20} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Daily Sales */}
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Today&apos;s Sales</h3>
+                <div className="bg-amber-200 p-2 rounded-lg">
+                  <DollarSign className="text-amber-600" size={20} />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-amber-700 mt-2">₹{salesData.dailyTotal.toLocaleString()}</p>
+              <div className="flex items-center mt-2 text-sm">
+                <TrendingUp className="text-green-500 mr-1" size={16} />
+                <span className="text-green-600 font-medium">+12.5%</span>
+                <span className="text-gray-500 ml-1">from yesterday</span>
               </div>
             </div>
-            <p className="text-3xl font-bold text-amber-700 mt-2">
-              ₹{salesData.dailyTotal.toLocaleString()}
-            </p>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingUp className="text-green-500 mr-1" size={16} />
-              <span className="text-green-600 font-medium">+12.5%</span>
-              <span className="text-gray-500 ml-1">from yesterday</span>
-            </div>
-          </div>
 
-          {/* Weekly Sales */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Weekly Sales</h3>
-              <div className="bg-amber-200 p-2 rounded-lg">
-                <Calendar className="text-amber-600" size={20} />
+            {/* Weekly Sales */}
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Weekly Sales</h3>
+                <div className="bg-amber-200 p-2 rounded-lg">
+                  <Calendar className="text-amber-600" size={20} />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-amber-700 mt-2">₹{salesData.weeklyTotal.toLocaleString()}</p>
+              <div className="flex items-center mt-2 text-sm">
+                <TrendingUp className="text-green-500 mr-1" size={16} />
+                <span className="text-green-600 font-medium">+8.2%</span>
+                <span className="text-gray-500 ml-1">from last week</span>
               </div>
             </div>
-            <p className="text-3xl font-bold text-amber-700 mt-2">
-              ₹{salesData.weeklyTotal.toLocaleString()}
-            </p>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingUp className="text-green-500 mr-1" size={16} />
-              <span className="text-green-600 font-medium">+8.2%</span>
-              <span className="text-gray-500 ml-1">from last week</span>
-            </div>
-          </div>
 
-          {/* Monthly Sales */}
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-700">Monthly Sales</h3>
-              <div className="bg-amber-200 p-2 rounded-lg">
-                <BarChartIcon className="text-amber-600" size={20} />
+            {/* Monthly Sales */}
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Monthly Sales</h3>
+                <div className="bg-amber-200 p-2 rounded-lg">
+                  <BarChartIcon className="text-amber-600" size={20} />
+                </div>
               </div>
-            </div>
-            <p className="text-3xl font-bold text-amber-700 mt-2">
-              ₹{salesData.monthlyTotal.toLocaleString()}
-            </p>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingUp className="text-green-500 mr-1" size={16} />
-              <span className="text-green-600 font-medium">+15.3%</span>
-              <span className="text-gray-500 ml-1">from last month</span>
+              <p className="text-3xl font-bold text-amber-700 mt-2">₹{salesData.monthlyTotal.toLocaleString()}</p>
+              <div className="flex items-center mt-2 text-sm">
+                <TrendingUp className="text-green-500 mr-1" size={16} />
+                <span className="text-green-600 font-medium">+15.3%</span>
+                <span className="text-gray-500 ml-1">from last month</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">Sales Trend</h3>
@@ -696,6 +825,10 @@ export default function AdminDashboard() {
         <div className="p-6">
           <h1 className="text-2xl font-bold text-amber-500">BITE & CO</h1>
           <p className="text-sm text-gray-500 mt-1">Restaurant Management</p>
+          <div className="mt-2 text-xs text-gray-500">
+            <p>Contact: +91 9874563210</p>
+            <p>Address: Belgavi</p>
+          </div>
         </div>
 
         <div className="px-3 py-4">
@@ -729,6 +862,14 @@ export default function AdminDashboard() {
               <BarChartIcon size={18} />
               <span className="font-medium">Sales</span>
             </button>
+
+            <a
+              href="/kitchen"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors text-gray-600 hover:bg-gray-50"
+            >
+              <FileText size={18} />
+              <span className="font-medium">Kitchen Dashboard</span>
+            </a>
           </div>
         </div>
       </div>
@@ -738,8 +879,11 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
+              <div className="flex-shrink-0 flex items-center flex-col">
                 <h1 className="text-xl font-bold text-amber-500">BITE & CO</h1>
+                <div className="text-xs text-gray-500">
+                  <span>+91 9874563210 | Belgavi</span>
+                </div>
               </div>
             </div>
             <div className="flex items-center">
@@ -779,6 +923,10 @@ export default function AdminDashboard() {
             <BarChartIcon size={18} className="mx-auto mb-1" />
             <span className="text-xs">Sales</span>
           </button>
+          <a href="/kitchen-dashboard" className="flex-1 py-3 text-center border-b-2 border-transparent text-gray-600">
+            <FileText size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Kitchen</span>
+          </a>
         </div>
       </div>
 
