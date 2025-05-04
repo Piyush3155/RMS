@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { sign } from "jsonwebtoken";
-import { serialize } from "cookie";
 
 const prisma = new PrismaClient();
-const SECRET_KEY = process.env.JWT_SECRET || "your_secret_key"; // Store this securely in .env
 
 export async function POST(req: Request) {
   try {
@@ -21,19 +18,15 @@ export async function POST(req: Request) {
     }
 
     // Generate JWT Token
-    const token = sign({ id: admin.id, email: admin.email }, SECRET_KEY, { expiresIn: "1d" });
 
     // Set Token in Cookies
     const response = NextResponse.json({ success: true, message: "Login successful" });
-    response.headers.set(
-      "Set-Cookie",
-      serialize("auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24, // 1 day
-        path: "/",
-      })
-    );
+    response.cookies.set("username", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
 
     return response;
   } catch (error) {

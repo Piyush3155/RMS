@@ -1,4 +1,5 @@
 "use client"
+import Image from "next/image";
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
@@ -21,15 +22,36 @@ import {
   Check,
   X,
   Clock,
+  Edit,
+  Trash2,
+  Filter,
+  ArrowUpDown,
 } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 
 interface MenuItem {
   id: number
-  name: string
+  itemName: string
   price: number
+  description: string
   imageUrl: string
+  category: string
+  createdAt: Date
 }
 
 interface Order {
@@ -53,8 +75,18 @@ interface Notification {
   type: "order" | "alert" | "info"
 }
 
+interface SalesAnalytics {
+  orderAnalytics: unknown[]
+  totalSales: number
+  totalItemsSold: number
+  topSellingItems: unknown[]
+  dailySalesData: { day: string; sales: number }[]
+  recentOrders: unknown[]
+}
+
 export default function AdminDashboard() {
-  const [] = useState<MenuItem[]>([])
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItem[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -67,7 +99,10 @@ export default function AdminDashboard() {
     category: "",
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [isMenuLoading, setIsMenuLoading] = useState(true)
+  const [isSalesLoading, setIsSalesLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [menuSearchQuery, setMenuSearchQuery] = useState("")
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -103,6 +138,10 @@ export default function AdminDashboard() {
       type: "info",
     },
   ])
+  const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<string>("createdAt")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
 
   const notificationRef = useRef<HTMLDivElement>(null)
 
@@ -117,14 +156,6 @@ export default function AdminDashboard() {
     { day: "Sun", sales: 2900 },
   ]
 
-  const monthlySalesData = [
-    { month: "Jan", sales: 25000, orders: 420 },
-    { month: "Feb", sales: 30000, orders: 510 },
-    { month: "Mar", sales: 28000, orders: 480 },
-    { month: "Apr", sales: 35000, orders: 590 },
-    { month: "May", sales: 32000, orders: 540 },
-    { month: "Jun", sales: 40000, orders: 670 },
-  ]
 
   const topSellingItems = [
     { name: "Butter Chicken", sold: 124, revenue: 24800 },
@@ -141,7 +172,13 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    fetchOrders()
+    if (activeTab === "orders") {
+      fetchOrders()
+    } else if (activeTab === "menu") {
+      fetchMenuItems()
+    } else if (activeTab === "sales") {
+      fetchSalesAnalytics()
+    }
 
     // Close notifications panel when clicking outside
     function handleClickOutside(event: MouseEvent) {
@@ -154,7 +191,7 @@ export default function AdminDashboard() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [])
+  }, [activeTab])
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -170,6 +207,64 @@ export default function AdminDashboard() {
       setFilteredOrders(filtered)
     }
   }, [searchQuery, orders])
+
+  useEffect(() => {
+    filterAndSortMenuItems()
+  }, [menuItems, menuSearchQuery, sortField, sortDirection, selectedCategory])
+
+  function filterAndSortMenuItems() {
+    let filtered = [...menuItems]
+
+    // Apply search filter
+    if (menuSearchQuery) {
+      const query = menuSearchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (item) =>
+          item.itemName.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query),
+      )
+    }
+
+    // Apply category filter
+    if (selectedCategory) {
+      filtered = filtered.filter((item) => item.category === selectedCategory)
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const fieldA = a[sortField as keyof MenuItem]
+      const fieldB = b[sortField as keyof MenuItem]
+
+      if (typeof fieldA === "string" && typeof fieldB === "string") {
+        return sortDirection === "asc" ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA)
+      }
+
+      if (typeof fieldA === "number" && typeof fieldB === "number") {
+        return sortDirection === "asc" ? fieldA - fieldB : fieldB - fieldA
+      }
+
+      // Handle date comparison for createdAt
+      if (sortField === "createdAt") {
+        return sortDirection === "asc"
+          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+
+      return 0
+    })
+
+    setFilteredMenuItems(filtered)
+  }
+
+  function handleSort(field: string) {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      setSortField(field)
+      setSortDirection("asc")
+    }
+  }
 
   // Keeping the original fetchOrders function intact
   async function fetchOrders() {
@@ -196,18 +291,53 @@ export default function AdminDashboard() {
     }
   }
 
+  async function fetchMenuItems() {
+    setIsMenuLoading(true)
+    try {
+      const res = await fetch("/api/v1/managemenu")
+      if (!res.ok) {
+        throw new Error("Failed to fetch menu items")
+      }
+      const data = await res.json()
+      setMenuItems(data)
+      setFilteredMenuItems(data)
+    } catch (error) {
+      console.error("Error fetching menu items:", error)
+    } finally {
+      setIsMenuLoading(false)
+    }
+  }
+
+  async function fetchSalesAnalytics() {
+    setIsSalesLoading(true)
+    try {
+      const res = await fetch("/api/v1/sales")
+      if (!res.ok) {
+        throw new Error("Failed to fetch sales analytics")
+      }
+      const data = await res.json()
+      setSalesAnalytics(data)
+    } catch (error) {
+      console.error("Error fetching sales analytics:", error)
+    } finally {
+      setIsSalesLoading(false)
+    }
+  }
+
   // Keeping the original handleAddItem function intact
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!newItem.name || !newItem.price || !newItem.photo || !newItem.description || !newItem.category) {
+    if (!newItem.name || !newItem.price || !newItem.description || !newItem.category) {
       alert("Please provide all fields")
       return
     }
 
     try {
       const formData = new FormData()
-      formData.append("photo", newItem.photo)
+      if (newItem.photo) {
+        formData.append("photo", newItem.photo)
+      }
       formData.append("name", newItem.name)
       formData.append("price", newItem.price.toString())
       formData.append("description", newItem.description)
@@ -237,6 +367,9 @@ export default function AdminDashboard() {
 
       alert("Item added successfully!")
       setNewItem({ name: "", price: 0, photo: null, description: "", category: "" })
+
+      // Refresh menu items
+      fetchMenuItems()
     } catch (error) {
       console.error("Error adding item:", error)
     }
@@ -528,109 +661,238 @@ export default function AdminDashboard() {
   )
 
   const renderMenu = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-1 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <Plus className="text-amber-500" size={24} />
-          <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <Plus className="text-amber-500" size={24} />
+            <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
+          </div>
+
+          <form onSubmit={handleAddItem} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Butter Chicken"
+                value={newItem.name}
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+              <input
+                type="number"
+                placeholder="e.g. 299"
+                value={newItem.price}
+                onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+              <div className="relative border border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+                {newItem.photo ? (
+                  <div className="text-sm text-gray-600">
+                    {newItem.photo.name} ({Math.round(newItem.photo.size / 1024)} KB)
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setNewItem({ ...newItem, photo: e.target.files?.[0] || null })}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                placeholder="Describe the dish..."
+                value={newItem.description}
+                onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={newItem.category}
+                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white"
+              >
+                <option value="" disabled>
+                  Select Category
+                </option>
+                <option value="Veg">Veg</option>
+                <option value="Non-Veg">Non-Veg</option>
+                <option value="Drinks">Drinks</option>
+                <option value="Rice">Rice</option>
+                <option value="Soup">Soup</option>
+                <option value="Main Course">Main Course</option>
+                <option value="Starter">Starter</option>
+                <option value="Dessert">Dessert</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Fast Food">Fast Food</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-amber-500 text-white px-4 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              Add to Menu
+            </button>
+          </form>
         </div>
 
-        <form onSubmit={handleAddItem} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-            <input
-              type="text"
-              placeholder="e.g. Butter Chicken"
-              value={newItem.name}
-              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-            />
+        <div className="md:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Menu className="text-amber-500" size={24} />
+              Current Menu
+            </h2>
+            <button
+              onClick={fetchMenuItems}
+              className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw size={16} className={isMenuLoading ? "animate-spin" : ""} />
+              {isMenuLoading ? "Loading..." : "Refresh"}
+            </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
-            <input
-              type="number"
-              placeholder="e.g. 299"
-              value={newItem.price}
-              onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-            <div className="relative border border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-              {newItem.photo ? (
-                <div className="text-sm text-gray-600">
-                  {newItem.photo.name} ({Math.round(newItem.photo.size / 1024)} KB)
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-              )}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setNewItem({ ...newItem, photo: e.target.files?.[0] || null })}
-                className="absolute inset-0 opacity-0 cursor-pointer"
+                type="text"
+                placeholder="Search menu items..."
+                value={menuSearchQuery}
+                onChange={(e) => setMenuSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 w-full"
               />
+            </div>
+
+            <div className="relative">
+              <select
+                value={selectedCategory || ""}
+                onChange={(e) => setSelectedCategory(e.target.value || null)}
+                className="pl-4 pr-8 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+              >
+                <option value="">All Categories</option>
+                {Array.from(new Set(menuItems.map((item) => item.category))).map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              placeholder="Describe the dish..."
-              value={newItem.description}
-              onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              value={newItem.category}
-              onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white"
-            >
-              <option value="" disabled>
-                Select Category
-              </option>
-              <option value="Veg">Veg</option>
-              <option value="Non-Veg">Non-Veg</option>
-              <option value="Drinks">Drinks</option>
-              <option value="Rice">Rice</option>
-              <option value="Soup">Soup</option>
-              <option value="Main Course">Main Course</option>
-              <option value="Starter">Starter</option>
-              <option value="Dessert">Dessert</option>
-              <option value="Snacks">Snacks</option>
-              <option value="Fast Food">Fast Food</option>
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-amber-500 text-white px-4 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus size={18} />
-            Add to Menu
-          </button>
-        </form>
-      </div>
-
-      <div className="md:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <Menu className="text-amber-500" size={24} />
-          Current Menu
-        </h2>
-
-        <div className="text-center py-12 bg-gray-50 rounded-xl">
-          <Menu className="mx-auto text-gray-400 mb-3" size={48} />
-          <p className="text-gray-500 text-lg">No menu items to display</p>
-          <p className="text-gray-400 text-sm mt-1">Add items using the form</p>
+          {isMenuLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center space-x-4 p-3 border-b border-gray-100">
+                  <Skeleton className="h-12 w-12 rounded-md" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                  <Skeleton className="h-8 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : filteredMenuItems.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <Menu className="mx-auto text-gray-400 mb-3" size={48} />
+              <p className="text-gray-500 text-lg">No menu items found</p>
+              <p className="text-gray-400 text-sm mt-1">Add items using the form</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 text-left border-b border-gray-200">
+                    <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">Image</th>
+                    <th
+                      className="p-3 font-semibold text-gray-600 cursor-pointer"
+                      onClick={() => handleSort("itemName")}
+                    >
+                      <div className="flex items-center gap-1">
+                        Name
+                        {sortField === "itemName" && (
+                          <ArrowUpDown size={14} className={sortDirection === "asc" ? "rotate-180" : ""} />
+                        )}
+                      </div>
+                    </th>
+                    <th className="p-3 font-semibold text-gray-600 cursor-pointer" onClick={() => handleSort("price")}>
+                      <div className="flex items-center gap-1">
+                        Price
+                        {sortField === "price" && (
+                          <ArrowUpDown size={14} className={sortDirection === "asc" ? "rotate-180" : ""} />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      className="p-3 font-semibold text-gray-600 cursor-pointer"
+                      onClick={() => handleSort("category")}
+                    >
+                      <div className="flex items-center gap-1">
+                        Category
+                        {sortField === "category" && (
+                          <ArrowUpDown size={14} className={sortDirection === "asc" ? "rotate-180" : ""} />
+                        )}
+                      </div>
+                    </th>
+                    <th className="p-3 font-semibold text-gray-600 rounded-tr-xl text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMenuItems.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-100 hover:bg-amber-50 transition-colors">
+                      <td className="p-3">
+                        <Image
+                          src={item.imageUrl || "/placeholder.svg"}
+                          alt={item.itemName}
+                          width={48}
+                          height={48}
+                          className="rounded-md object-cover"
+                        />
+                      </td>
+                      <td className="p-3 font-medium">
+                        <div>{item.itemName}</div>
+                        <div className="text-xs text-gray-500 truncate max-w-xs">{item.description}</div>
+                      </td>
+                      <td className="p-3">₹{item.price.toFixed(2)}</td>
+                      <td className="p-3">
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">{item.category}</Badge>
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button className="p-2 rounded-lg text-gray-600 hover:bg-gray-100">
+                            <Edit size={16} />
+                          </button>
+                          <button className="p-2 rounded-lg text-red-500 hover:bg-red-50">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -640,10 +902,19 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <BarChartIcon className="text-amber-500" size={24} />
-            Sales Overview
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <BarChartIcon className="text-amber-500" size={24} />
+              Sales Overview
+            </h2>
+            <button
+              onClick={fetchSalesAnalytics}
+              className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw size={16} className={isSalesLoading ? "animate-spin" : ""} />
+              {isSalesLoading ? "Loading..." : "Refresh"}
+            </button>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Daily Sales */}
@@ -654,7 +925,9 @@ export default function AdminDashboard() {
                   <DollarSign className="text-amber-600" size={20} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-amber-700 mt-2">₹{salesData.dailyTotal.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-amber-700 mt-2">
+                ₹{isSalesLoading ? "..." : (salesAnalytics?.totalSales || salesData.dailyTotal).toLocaleString()}
+              </p>
               <div className="flex items-center mt-2 text-sm">
                 <TrendingUp className="text-green-500 mr-1" size={16} />
                 <span className="text-green-600 font-medium">+12.5%</span>
@@ -665,12 +938,14 @@ export default function AdminDashboard() {
             {/* Weekly Sales */}
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-700">Weekly Sales</h3>
+                <h3 className="text-lg font-medium text-gray-700">Total Items Sold</h3>
                 <div className="bg-amber-200 p-2 rounded-lg">
                   <Calendar className="text-amber-600" size={20} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-amber-700 mt-2">₹{salesData.weeklyTotal.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-amber-700 mt-2">
+                {isSalesLoading ? "..." : (salesAnalytics?.totalItemsSold || 0).toLocaleString()}
+              </p>
               <div className="flex items-center mt-2 text-sm">
                 <TrendingUp className="text-green-500 mr-1" size={16} />
                 <span className="text-green-600 font-medium">+8.2%</span>
@@ -681,12 +956,17 @@ export default function AdminDashboard() {
             {/* Monthly Sales */}
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-700">Monthly Sales</h3>
+                <h3 className="text-lg font-medium text-gray-700">Average Order Value</h3>
                 <div className="bg-amber-200 p-2 rounded-lg">
                   <BarChartIcon className="text-amber-600" size={20} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-amber-700 mt-2">₹{salesData.monthlyTotal.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-amber-700 mt-2">
+                ₹
+                {isSalesLoading || !salesAnalytics?.totalItemsSold
+                  ? "..."
+                  : (salesAnalytics.totalSales / salesAnalytics.totalItemsSold).toFixed(2)}
+              </p>
               <div className="flex items-center mt-2 text-sm">
                 <TrendingUp className="text-green-500 mr-1" size={16} />
                 <span className="text-green-600 font-medium">+15.3%</span>
@@ -709,7 +989,7 @@ export default function AdminDashboard() {
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={dailySalesData}
+              data={salesAnalytics?.dailySalesData || dailySalesData}
               margin={{
                 top: 5,
                 right: 30,
@@ -780,40 +1060,90 @@ export default function AdminDashboard() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Monthly Performance</h3>
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Category Distribution</h3>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={monthlySalesData}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" />
-                <YAxis yAxisId="left" orientation="left" stroke="#f59e0b" />
-                <YAxis yAxisId="right" orientation="right" stroke="#78350f" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #f59e0b",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                  }}
-                  formatter={(value, name) => [
-                    name === "sales" ? `₹${value}` : value,
-                    name === "sales" ? "Sales" : "Orders",
-                  ]}
-                />
-                <Bar yAxisId="left" dataKey="sales" fill="#f59e0b" name="Sales" radius={[4, 4, 0, 0]} />
-                <Bar yAxisId="right" dataKey="orders" fill="#78350f" name="Orders" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {isSalesLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Skeleton className="h-60 w-60 rounded-full" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Veg", value: 35 },
+                      { name: "Non-Veg", value: 40 },
+                      { name: "Drinks", value: 15 },
+                      { name: "Desserts", value: 10 },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#f59e0b"
+                    dataKey="value"
+                  >
+                    {[
+                      { name: "Veg", value: 35 },
+                      { name: "Non-Veg", value: 40 },
+                      { name: "Drinks", value: 15 },
+                      { name: "Desserts", value: 10 },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={["#f59e0b", "#d97706", "#b45309", "#92400e"][index % 4]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} items`, "Count"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Sales Analytics Table</h3>
+        {isSalesLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center space-x-4 p-3 border-b border-gray-100">
+                <Skeleton className="h-6 w-10" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-16" />
+                <div className="ml-auto">
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 text-left border-b border-gray-200">
+                  <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">Order ID</th>
+                  <th className="p-3 font-semibold text-gray-600">Total Amount</th>
+                  <th className="p-3 font-semibold text-gray-600">Items Sold</th>
+                  <th className="p-3 font-semibold text-gray-600">Top Item</th>
+                  <th className="p-3 font-semibold text-gray-600">Top Item Count</th>
+                  <th className="p-3 font-semibold text-gray-600 rounded-tr-xl">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(salesAnalytics?.orderAnalytics || []).map((analytics: any) => (
+                  <tr key={analytics.id} className="border-b border-gray-100 hover:bg-amber-50 transition-colors">
+                    <td className="p-3 font-medium">{analytics.orderId}</td>
+                    <td className="p-3">₹{analytics.totalAmount.toFixed(2)}</td>
+                    <td className="p-3">{analytics.totalItemsSold}</td>
+                    <td className="p-3">{analytics.topItemName}</td>
+                    <td className="p-3">{analytics.topItemCount}</td>
+                    <td className="p-3">{new Date(analytics.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

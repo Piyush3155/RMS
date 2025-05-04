@@ -2,17 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const username = req.cookies.get("username")?.value; // Get username from cookies
+  const username = req.cookies.get("username")?.value;
 
-  // Public pages that don't require authentication
-  const publicRoutes = ["/login"];
+  const normalizedPath = pathname.replace(/\/$/, "");
+  const publicRoutes = ["/login", "/"];
 
-  // Allow access to public pages
-  if (publicRoutes.includes(pathname)) {
+  if (publicRoutes.includes(normalizedPath)) {
     return NextResponse.next();
   }
 
-  // If the user is NOT logged in, redirect to login page
   if (!username) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
@@ -20,7 +18,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Apply middleware to protected routes only
 export const config = {
-  matcher: ["/user/:path*", "/dash/:path*"], // Add more protected routes as needed,
+  matcher: ["/user/:path*", "/dash/:path*", "/manager/:path*", "/admin/:path*"],
 };
