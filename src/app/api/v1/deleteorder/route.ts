@@ -13,12 +13,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the order from the database
-    await prisma.fetchorder.delete({
+    await prisma.order2.delete({
       where: {
         id: Number.parseInt(id),
       },
     })
 
+    console.log("Order deleted successfully = ",id)
     return NextResponse.json({ success: true, message: "Order deleted successfully" })
   } catch (error) {
     console.error("Error deleting order:", error)

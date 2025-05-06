@@ -62,10 +62,13 @@ export async function GET() {
 
     // Format sales by date for chart
     const dailySalesData = salesByDate.map((item) => ({
-      day: new Date(item.createdAt).toLocaleDateString("en-US", { weekday: "short" }),
+      day: new Date(item.createdAt).toLocaleDateString("en-IN", {
+        weekday: "short",
+        timeZone: "Asia/Kolkata",
+      }),
       sales: item._sum.totalAmount || 0,
-    }))
-
+    }));
+    
     // Get recent orders
     const recentOrders = await prisma.fetchorder.findMany({
       orderBy: {

@@ -795,8 +795,8 @@ export default function Menu() {
                     </div>
 
                     <div className="flex justify-between text-sm text-gray-600 mb-4">
-                      <span>Service Charge (10%):</span>
-                      <span>₹{(getCartTotal() * 0.1).toFixed(2)}</span>
+                      <span>Service Charge (5%):</span>
+                      <span>₹{(getCartTotal() * 0.05).toFixed(2)}</span>
                     </div>
 
                     <div className="flex justify-between text-xl font-bold text-amber-600 mb-6 pt-2 border-t border-gray-100">

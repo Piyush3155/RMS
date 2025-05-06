@@ -12,35 +12,16 @@ export async function GET() {
     })
 
     // Group orders by tableNumber
-    const groupedOrders: Record<
-      number,
-      {
-        tableNumber: number
-        orders: typeof orders
-        items: Array<{
-          name: string
-          price: number
-          quantity: number
-        }>
-        totalPrice: number
-      }
-    > = {}
+    const groupedOrders: Record<number, { tableNumber: number; orders: typeof orders; items: Array<{ name: string }>; totalPrice: number }> = {}
 
     for (const order of orders) {
       const tableNo = order.tableNumber
       const parsedItems = (() => {
         try {
           const data = JSON.parse(order.items)
-          // Ensure each item has the required properties
-          return Array.isArray(data)
-            ? data.map((item) => ({
-                name: item.itemName || item.name || "Unknown Item",
-                price: item.price || 0,
-                quantity: item.quantity || 1,
-              }))
-            : [{ name: order.items, price: 0, quantity: 1 }]
+          return Array.isArray(data) ? data : [data]
         } catch {
-          return [{ name: order.items, price: 0, quantity: 1 }]
+          return [{ name: order.items }]
         }
       })()
 

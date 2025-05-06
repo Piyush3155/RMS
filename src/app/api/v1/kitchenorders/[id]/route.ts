@@ -36,8 +36,14 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       data: { status },
     });
 
+    const updatedOr = await prisma.order2.update({
+      where: { id },
+      data: { status },
+    });
+
     return NextResponse.json(
-      { message: "Order status updated", order: updatedOrder },
+      { message: "Order status updated", kitchenOrder: updatedOrder, order: updatedOr },
+      
       { status: 200 }
     );
   } catch (error) {

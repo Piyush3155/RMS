@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Coffee } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -47,12 +47,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
       {/* Left Side Image with Overlay */}
       <div className="relative w-full md:w-3/5 h-64 md:h-auto overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-900/40 to-amber-700/40 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-900/40 to-amber-700/40 -z-55" />
         <Image
           src="/food.png"
           alt="Delicious food"
           fill
-          className="object-cover object-center transition-transform duration-10000 hover:scale-105"
+          className="object-cover object-center"
           priority
         />
       </div>
@@ -63,9 +63,7 @@ export default function LoginPage() {
           {/* Logo and Welcome */}
           <div className="mb-10 text-center">
             <div className="flex items-center justify-center mb-4">
-              <Coffee size={32} className="text-amber-400 mr-2" />
-              <h2 className="text-3xl font-bold text-amber-800 font-serif">Bites & Co.</h2>
-            </div>
+              <Image src="/biteandco.png" alt="Bites & Co Logo" width={150} height={50} priority /></div>
             <p className="text-gray-600">Welcome back! Please log in to your account.</p>
           </div>
 

@@ -90,4 +90,5 @@ model fetchorder{
   orderId     Int?
   quantity   Int? @default(1)
   itemName   String?
+  
 }

@@ -9,17 +9,29 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(
-      orders.map((order) => ({
-        id: order.id,
-        tableNumber: order.tableNumber,
-        items: JSON.parse(order.items), // Assuming items are stored as JSON string
-        status: order.status,
-        timestamp: order.createdAt,
-      }))
-    );
+    const validOrders = orders
+      .map((order) => {
+        try {
+          return {
+            id: order.id,
+            tableNumber: order.tableNumber,
+            items: JSON.parse(order.items), // Safely parse items
+            status: order.status,
+            timestamp: order.createdAt,
+          };
+        } catch {
+          console.warn("Skipping malformed order.items:", order.items);
+          return null;
+        }
+      })
+      .filter(Boolean); // Remove any nulls caused by failed parsing
+
+    return NextResponse.json(validOrders);
   } catch (error) {
     console.error("Error fetching orders:", error);
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch orders" },
+      { status: 500 }
+    );
   }
 }
