@@ -4,9 +4,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   const admins = [
-    { name: "Admin1", email: "admin1@example.com", password: "admin123" },
-    { name: "Admin2", email: "admin2@example.com", password: "admin456" },
-    { name: "Admin3", email: "admin3@example.com", password: "admin789" },
+    { name: "Piyush", email: "piyushgurav176@gmail.com", password: "piyush123" },
+    { name: "Srinidhi", email: "srinidhikittur@gmail.com", password: "srinidhi123" },
+    { name: "Sanika", email: "sanikavandure@gmail.com", password: "sanika123" },
   ];
 
   await Promise.all(

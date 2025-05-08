@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client"
 import { type NextRequest, NextResponse } from "next/server"
+import { generateUniqueNumericOrderId } from "@/utils/generate-id"
 
 const prisma = new PrismaClient()
 
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid request data" }, { status: 400 })
     }
 
+    // Generate a unique 6-digit numeric order ID
+    const numericOrderId = await generateUniqueNumericOrderId(prisma)
+
     // Check if there's an existing order for this table with status "pending"
     const existingOrder = await prisma.order2.findFirst({
       where: {
@@ -27,8 +31,10 @@ export async function POST(req: NextRequest) {
         tableNumber,
         items: JSON.stringify(items),
         status: "pending",
+        orderId: numericOrderId, // Add the generated numeric order ID
       },
     })
+
     const result = await prisma.$transaction(async (prisma) => {
       let order
 
@@ -43,11 +49,9 @@ export async function POST(req: NextRequest) {
           data: {
             items: JSON.stringify(updatedItems),
             price: existingOrder.price + totalPrice,
+            orderId: numericOrderId, // Update with the new order ID
           },
         })
-
-        // Update kitchen dashboard entry
-
       } else {
         // Create new order if no existing order found
         order = await prisma.order2.create({
@@ -56,9 +60,9 @@ export async function POST(req: NextRequest) {
             items: JSON.stringify(items),
             status: "pending",
             price: totalPrice,
+            orderId: numericOrderId, // Add the generated numeric order ID
           },
         })
-
       }
 
       // Use original items for analytics
@@ -90,7 +94,7 @@ export async function POST(req: NextRequest) {
             data: {
               totalAmount: existingAnalytics.totalAmount + totalAmount,
               totalItemsSold: existingAnalytics.totalItemsSold + totalItemsSold,
-              // We'll keep the existing top item for simplicity
+              numericOrderId: numericOrderId, // Add the numeric order ID
             },
           })
         }
@@ -103,6 +107,7 @@ export async function POST(req: NextRequest) {
             totalItemsSold,
             topItemName,
             topItemCount,
+            numericOrderId: numericOrderId, // Add the numeric order ID
           },
         })
       }
@@ -117,6 +122,7 @@ export async function POST(req: NextRequest) {
           price: item.price,
           status: "pending",
           orderId: order.id,
+          numericOrderId: numericOrderId, // Add the numeric order ID
         })),
       })
 
@@ -124,10 +130,18 @@ export async function POST(req: NextRequest) {
         message: existingOrder ? "Order updated" : "New order created",
         order,
         isUpdate: !!existingOrder,
+        orderId: numericOrderId, // Include the numeric order ID in the response
       }
     })
 
-    return NextResponse.json({ success: true, result }, { status: 200 })
+    return NextResponse.json(
+      {
+        success: true,
+        result,
+        orderId: numericOrderId, // Include the order ID in the top-level response
+      },
+      { status: 200 },
+    )
   } catch (error) {
     console.error("POST /api/v1/order error:", error)
     return NextResponse.json({ error: "Database error!" }, { status: 500 })

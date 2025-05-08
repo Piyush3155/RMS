@@ -238,14 +238,10 @@ export default function Menu() {
               alt="Logo"
               width={40}
               height={40}
-              className="rounded-full shadow-sm w-12 h-12"
+              className="rounded-full shadow-sm w-20 h-18"
               priority
             />
-            <div className="hidden md:block">
-              <div className="flex items-center gap-1 cursor-pointer hover:text-amber-600 transition-colors">
-                <h2 className="font-bold text-lg">Bite & Co</h2>
-                <ChevronDown size={16} />
-              </div>
+            <div className="hidden md:block"> 
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <span>Table {window.localStorage.getItem("tableNumber") || "?"}</span>
                 <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
@@ -254,10 +250,6 @@ export default function Menu() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="hidden md:flex items-center gap-1 text-gray-700 hover:text-amber-600 transition-colors">
-              <Clock size={18} />
-              <span className="font-medium">Order History</span>
-            </button>
             <button
               onClick={() => setShowCart(!showCart)}
               className="relative p-2 hover:bg-amber-50 rounded-full transition-colors"

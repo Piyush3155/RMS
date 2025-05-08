@@ -64,6 +64,7 @@ interface OrderItem {
 }
 
 interface Order {
+  orderId: number | null
   id: number
   tableNumber: number
   items: OrderItem[]
@@ -106,6 +107,8 @@ interface SalesAnalytics {
     createdAt: Date
   }[]
   totalSales: number
+  todaySales: number
+  monthlySales: number
   topSellingItems: unknown[]
   dailySalesData: { day: string; sales: number }[]
   recentOrders: unknown[]
@@ -197,11 +200,6 @@ export default function AdminDashboard() {
     { name: "Gulab Jamun", sold: 65, revenue: 6500 },
   ]
 
-  const salesData = {
-    dailyTotal: 12000,
-    weeklyTotal: 84000,
-    monthlyTotal: 360000,
-  }
 
   useEffect(() => {
     if (activeTab === "orders") {
@@ -308,13 +306,14 @@ export default function AdminDashboard() {
       const data = await res.json()
 
       // Transform the grouped data into individual orders for display
-      const transformedOrders = data.flatMap((group: { tableNumber: number; items: OrderItem[]; totalPrice: number; orders: Order[] }) =>
-        group.orders.map((order: Order) => ({
-          ...order,
-          tableNumber: group.tableNumber,
-          items: group.items,
-          totalPrice: group.totalPrice,
-        })),
+      const transformedOrders = data.flatMap(
+        (group: { tableNumber: number; items: OrderItem[]; totalPrice: number; orders: Order[] }) =>
+          group.orders.map((order: Order) => ({
+            ...order,
+            tableNumber: group.tableNumber,
+            items: group.items,
+            totalPrice: group.totalPrice,
+          })),
       )
 
       setOrders(transformedOrders)
@@ -571,7 +570,7 @@ export default function AdminDashboard() {
             <div class="bill-title">BILL RECEIPT</div>
             
             <div class="bill-details">
-              <div><span>Order #:</span> <span>${order.id}</span></div>
+              <div><span>Order #:</span> <span>${order.orderId}</span></div>
               <div><span>Table:</span> <span>${order.tableNumber}</span></div>
               <div><span>Date:</span> <span>${new Date(order.createdAt).toLocaleDateString()}</span></div>
               <div><span>Time:</span> <span>${new Date(order.createdAt).toLocaleTimeString()}</span></div>
@@ -716,11 +715,11 @@ export default function AdminDashboard() {
                   key={order.id}
                   className={`border-b border-gray-100 hover:bg-amber-50 transition-colors ${selectedOrder?.id === order.id ? "bg-amber-50" : ""}`}
                 >
-                  <td className="p-3 font-medium">{order.id}</td>
+                  <td className="p-3 font-medium">{order.orderId}</td>
                   <td className="p-3">{order.tableNumber}</td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
-                    <span className="bg-amber-200 p-2 pr-4 pl-4 rounded-full text-black">{order.items.length}</span>
+                      <span className="bg-amber-200 p-2 pr-4 pl-4 rounded-full text-black">{order.items.length}</span>
                     </div>
                   </td>
                   <td className="p-3 text-right">
@@ -748,7 +747,7 @@ export default function AdminDashboard() {
       {selectedOrder && (
         <div className="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-gray-800">Order #{selectedOrder.id} Details</h3>
+            <h3 className="text-xl font-bold text-gray-800">Order #{selectedOrder.orderId} Details</h3>
             <span className="text-gray-500 text-sm">Table: {selectedOrder.tableNumber}</span>
           </div>
 
@@ -762,7 +761,7 @@ export default function AdminDashboard() {
                   <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-xl">Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className=" border-b border-gray-200">
                 {selectedOrder.items.map((item, index) => (
                   <tr key={index} className="border-b border-gray-100">
                     <td className="p-3">{item.name}</td>
@@ -787,8 +786,8 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-amber-50">
-                  <td colSpan={2} className="p-3 text-right font-bold">
+                <tr className="">
+                  <td colSpan={2} className="p-3 text-right font-light">
                     Order Total:
                   </td>
                   <td colSpan={2} className="p-3 text-right font-bold text-amber-700">
@@ -799,7 +798,7 @@ export default function AdminDashboard() {
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={2} className="p-3 text-right font-bold">
+                  <td colSpan={2} className="p-3 text-right font-light">
                     GST 5%:
                   </td>
                   <td colSpan={2} className="p-3 text-right font-bold text-amber-700">
@@ -810,7 +809,7 @@ export default function AdminDashboard() {
                     ).toFixed(2)}
                   </td>
                 </tr>
-                <tr>
+                <tr className="border-t border-gray-200 bg-amber-50">
                   <td colSpan={2} className="p-3 text-right font-bold">
                     Total Amount :
                   </td>
@@ -1106,7 +1105,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Daily Sales */}
+            {/* Today's Sales */}
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-gray-700">Today&apos;s Sales</h3>
@@ -1115,7 +1114,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <p className="text-3xl font-bold text-amber-700 mt-2">
-                ₹{isSalesLoading ? "..." : (salesAnalytics?.totalSales || salesData.dailyTotal).toLocaleString()}
+                ₹{isSalesLoading ? "..." : (salesAnalytics?.todaySales || 0).toLocaleString()}
               </p>
               <div className="flex items-center mt-2 text-sm">
                 <TrendingUp className="text-green-500 mr-1" size={16} />
@@ -1127,7 +1126,7 @@ export default function AdminDashboard() {
             {/* Weekly Sales */}
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-700">Total Items Sold</h3>
+                <h3 className="text-lg font-medium text-gray-700">Items Sold (7 days)</h3>
                 <div className="bg-amber-200 p-2 rounded-lg">
                   <Calendar className="text-amber-600" size={20} />
                 </div>
@@ -1145,16 +1144,13 @@ export default function AdminDashboard() {
             {/* Monthly Sales */}
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-700">Average Order Value</h3>
+                <h3 className="text-lg font-medium text-gray-700">Monthly Sales</h3>
                 <div className="bg-amber-200 p-2 rounded-lg">
-                  <BarChartIcon className="text-amber-600" size={20} />
+                  <Calendar className="text-amber-600" size={20} />
                 </div>
               </div>
               <p className="text-3xl font-bold text-amber-700 mt-2">
-                ₹
-                {isSalesLoading || !salesAnalytics?.totalItemsSold
-                  ? "..."
-                  : (salesAnalytics.totalSales / salesAnalytics.totalItemsSold).toFixed(2)}
+                ₹{isSalesLoading ? "..." : (salesAnalytics?.monthlySales || 0).toLocaleString()}
               </p>
               <div className="flex items-center mt-2 text-sm">
                 <TrendingUp className="text-green-500 mr-1" size={16} />

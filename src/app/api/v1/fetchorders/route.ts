@@ -23,6 +23,7 @@ export async function GET() {
           quantity: number
         }>
         totalPrice: number
+        orderIds: number[] // New array to store all orderIds for a table
       }
     > = {}
 
@@ -50,12 +51,16 @@ export async function GET() {
           orders: [],
           items: [],
           totalPrice: 0,
+          orderIds: [],  // Initialize orderIds array
         }
       }
 
       groupedOrders[tableNo].orders.push(order)
       groupedOrders[tableNo].items.push(...parsedItems)
       groupedOrders[tableNo].totalPrice += order.price
+      if (order.orderId !== null) {
+        groupedOrders[tableNo].orderIds.push(order.orderId) // Add orderId to the list
+      }
     }
 
     // Convert to array of grouped objects

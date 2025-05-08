@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 
-const tables = Array.from({ length: 8 }, (_, i) => i + 1);
+const tables = Array.from({ length: 9 }, (_, i) => i + 1);
 
 export default function QRCodeGenerator() {
   const [origin, setOrigin] = useState("");
@@ -18,11 +18,12 @@ export default function QRCodeGenerator() {
         <div key={tableNo} className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-bold text-center">Table {tableNo}</h3>
           {origin && (
-            <QRCodeCanvas value={`${origin}/orders?table=${tableNo}`} size={150} />
+            <QRCodeCanvas value={`http://192.168.29.167:3000/orders?table=${tableNo}`} size={150} />
             
           )}
         </div>
       ))}
+      
     </div>
   );
 }

@@ -36,13 +36,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       data: { status },
     });
 
-    const updatedOr = await prisma.order2.update({
-      where: { id },
-      data: { status },
-    });
 
     return NextResponse.json(
-      { message: "Order status updated", kitchenOrder: updatedOrder, order: updatedOr },
+      { message: "Order status updated", kitchenOrder: updatedOrder },
       
       { status: 200 }
     );
@@ -78,4 +74,3 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     return NextResponse.json({ error: "Failed to delete order" }, { status: 500 });
   }
 }
-

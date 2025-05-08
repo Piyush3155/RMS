@@ -28,6 +28,7 @@ model kitchendashboard {
   items       String
   status      String   @default("pending")
   createdAt   DateTime @default(now())
+  orderId     Int?     // Added 6-digit order ID field
 }
 
 model menu {
@@ -54,7 +55,7 @@ model order2 {
   createdAt   DateTime @default(now())
   status      String   @default("pending")
   price       Float
-  orderId     Int?
+  orderId     Int?     // Updated to store 6-digit order ID
 }
 
 model orderanalytics {
@@ -65,6 +66,7 @@ model orderanalytics {
   topItemName    String
   topItemCount   Int
   createdAt      DateTime @default(now())
+  numericOrderId Int?     // Added to store the 6-digit order ID
 }
 
 model orderitem {
@@ -80,15 +82,15 @@ model orderitem {
   @@index([orderId], map: "OrderItem_orderId_fkey")
 }
 
-model fetchorder{
-  id         Int      @id @default(autoincrement())
+model fetchorder {
+  id          Int      @id @default(autoincrement())
   tableNumber Int
   items       String
   createdAt   DateTime @default(now())
   price       Float
   status      String   @default("pending")
   orderId     Int?
-  quantity   Int? @default(1)
-  itemName   String?
-  
+  quantity    Int?     @default(1)
+  itemName    String?
+  numericOrderId Int?  // Added to store the 6-digit order ID
 }

@@ -6,6 +6,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -47,14 +48,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
       {/* Left Side Image with Overlay */}
       <div className="relative w-full md:w-3/5 h-64 md:h-auto overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-900/40 to-amber-700/40 -z-55" />
-        <Image
-          src="/food.png"
-          alt="Delicious food"
-          fill
-          className="object-cover object-center"
-          priority
-        />
+        <div className="absolute inset-0  z-10" />
+        <Image src="/food.png" alt="Delicious food" fill className="object-cover object-center" priority />
       </div>
 
       {/* Right Side Login with Content */}
@@ -63,7 +58,8 @@ export default function LoginPage() {
           {/* Logo and Welcome */}
           <div className="mb-10 text-center">
             <div className="flex items-center justify-center mb-4">
-              <Image src="/biteandco.png" alt="Bites & Co Logo" width={150} height={50} priority /></div>
+              <Image src="/biteandco.png" alt="Bites & Co Logo" width={150} height={50} priority />
+            </div>
             <p className="text-gray-600">Welcome back! Please log in to your account.</p>
           </div>
 
@@ -99,9 +95,9 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <a href="#" className="text-xs text-amber-700 hover:text-amber-800 hover:underline">
+                <Link href="/forgot-password" className="text-xs text-amber-700 hover:text-amber-800 hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <input
@@ -136,7 +132,7 @@ export default function LoginPage() {
           <div className="text-center mt-8">
             <p className="text-sm text-gray-600">
               Need assistance?{" "}
-              <a href="7019450720" className="font-medium text-amber-700 hover:text-amber-800 hover:underline">
+              <a href="tel:7019450720" className="font-medium text-amber-700 hover:text-amber-800 hover:underline">
                 Contact Support Team
               </a>
             </p>
