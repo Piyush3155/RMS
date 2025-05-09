@@ -49,6 +49,7 @@ export async function PUT(request: NextRequest) {
         description: body.description,
         price: body.price,
         category: body.category,
+        isVeg:body.isVeg
         // Add other fields you allow to update here
       },
     })

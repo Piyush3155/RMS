@@ -10,6 +10,7 @@ interface MenuItem {
   description: string
   imageUrl: string
   category: string
+  isVeg: boolean // Added isVeg property
 }
 
 interface EditMenuModalProps {
@@ -138,7 +139,31 @@ export default function EditMenuModal({ item, onClose, onSave }: EditMenuModalPr
               <option value="Fast Food">Fast Food</option>
             </select>
           </div>
-
+          {/* radio button for veg and non veg */}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="radio"
+                name="isVeg"
+                value="true"
+                checked={formData.isVeg === true}
+                onChange={() => setFormData((prev) => ({ ...prev, isVeg: true }))}
+                className="h-4 w-4 text-amber-500 border-gray-300 focus:ring-2 focus:ring-amber-500"
+              />
+              Veg
+            </label>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="radio"
+                name="isVeg"
+                value="false"
+                checked={formData.isVeg === false}
+                onChange={() => setFormData((prev) => ({ ...prev, isVeg: false }))}
+                className="h-4 w-4 text-amber-500 border-gray-300 focus:ring-2 focus:ring-amber-500"
+              />
+              Non-Veg
+            </label>
+          </div>
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"

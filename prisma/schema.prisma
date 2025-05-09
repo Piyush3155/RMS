@@ -31,15 +31,17 @@ model kitchendashboard {
   orderId     Int?     // Added 6-digit order ID field
 }
 
-model menu {
+model Menu {
   id          Int      @id @default(autoincrement())
   itemName    String
   price       Float
   description String
   imageUrl    String
   category    String
+  isVeg       Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
+
 
 model order {
   id        Int      @id @default(autoincrement())

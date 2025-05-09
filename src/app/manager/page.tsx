@@ -55,6 +55,7 @@ interface MenuItem {
   imageUrl: string
   category: string
   createdAt: Date
+  isVeg: boolean
 }
 
 interface OrderItem {
@@ -128,6 +129,7 @@ export default function AdminDashboard() {
     photo: null as File | null,
     description: "",
     category: "",
+    isVeg: true,
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isMenuLoading, setIsMenuLoading] = useState(true)
@@ -199,7 +201,6 @@ export default function AdminDashboard() {
     { name: "Masala Dosa", sold: 76, revenue: 11400 },
     { name: "Gulab Jamun", sold: 65, revenue: 6500 },
   ]
-
 
   useEffect(() => {
     if (activeTab === "orders") {
@@ -459,6 +460,7 @@ export default function AdminDashboard() {
       formData.append("price", newItem.price.toString())
       formData.append("description", newItem.description)
       formData.append("category", newItem.category)
+      formData.append("isVeg", newItem.isVeg.toString())
 
       const res = await fetch("/api/v1/addmenuitem", {
         method: "POST",
@@ -483,7 +485,7 @@ export default function AdminDashboard() {
       setNotifications((prev) => [newNotification, ...prev])
 
       alert("Item added successfully!")
-      setNewItem({ name: "", price: 0, photo: null, description: "", category: "" })
+      setNewItem({ name: "", price: 0, photo: null, description: "", category: "", isVeg: true })
 
       // Refresh menu items
       fetchMenuItems()
@@ -905,6 +907,32 @@ export default function AdminDashboard() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="isVeg"
+                    checked={newItem.isVeg === true}
+                    onChange={() => setNewItem({ ...newItem, isVeg: true })}
+                    className="h-4 w-4 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Vegetarian</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="isVeg"
+                    checked={newItem.isVeg === false}
+                    onChange={() => setNewItem({ ...newItem, isVeg: false })}
+                    className="h-4 w-4 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Non-Vegetarian</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select
                 value={newItem.category}
@@ -914,8 +942,6 @@ export default function AdminDashboard() {
                 <option value="" disabled>
                   Select Category
                 </option>
-                <option value="Veg">Veg</option>
-                <option value="Non-Veg">Non-Veg</option>
                 <option value="Drinks">Drinks</option>
                 <option value="Rice">Rice</option>
                 <option value="Soup">Soup</option>
@@ -1025,6 +1051,7 @@ export default function AdminDashboard() {
                         )}
                       </div>
                     </th>
+                    <th className="p-3 font-semibold text-gray-600">Type</th>
                     <th
                       className="p-3 font-semibold text-gray-600 cursor-pointer"
                       onClick={() => handleSort("category")}
@@ -1056,6 +1083,17 @@ export default function AdminDashboard() {
                         <div className="text-xs text-gray-500 truncate max-w-xs">{item.description}</div>
                       </td>
                       <td className="p-3">₹{item.price.toFixed(2)}</td>
+                      <td className="p-3">
+                        <Badge
+                          className={
+                            item.isVeg
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-red-100 text-red-800 border-red-200"
+                          }
+                        >
+                          {item.isVeg ? "Veg" : "Non-Veg"}
+                        </Badge>
+                      </td>
                       <td className="p-3">
                         <Badge className="bg-amber-100 text-amber-800 border-amber-200">{item.category}</Badge>
                       </td>

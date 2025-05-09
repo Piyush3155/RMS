@@ -2,23 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import {
-  MinusCircle,
-  PlusCircle,
-  ShoppingBag,
-  X,
-  ChevronLeft,
-  Coffee,
-  Utensils,
-  Clock,
-  Check,
-  Search,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react"
+import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft, Coffee, Utensils, Clock, Check, Search, Filter, ChevronDown, ChevronUp, Leaf, Drumstick } from 'lucide-react'
 import Image from "next/image"
 
+// Updated interface to include the new fields from the API
 interface MenuItem {
   id: number
   itemName: string
@@ -26,6 +13,16 @@ interface MenuItem {
   description: string
   imageUrl: string
   category: string
+  isVeg?: boolean
+  vegSymbol?: string
+  vegIndicator?: {
+    type: "veg" | "non-veg"
+    symbol: {
+      shape: string
+      color: string
+      dot: boolean
+    }
+  }
 }
 
 interface CartItem extends MenuItem {
@@ -74,6 +71,7 @@ export default function Menu() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [priceFilter, setPriceFilter] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<string>("default")
+  const [dietFilter, setDietFilter] = useState<string>("all") // New state for veg/non-veg filter
 
   useEffect(() => {
     if (table) {
@@ -117,17 +115,35 @@ export default function Menu() {
     return false
   }
 
+  const applyDietFilter = (item: MenuItem & { normalizedCategory: string }) => {
+    if (dietFilter === "all") return true
+    if (dietFilter === "veg" && (item.isVeg === true || item.normalizedCategory === "Vegetarian")) return true
+    if (dietFilter === "non-veg" && (item.isVeg === false || item.normalizedCategory === "Non-Vegetarian")) return true
+    return false
+  }
+
   const filteredMenu = normalizedMenu.filter((item) => {
     const matchesCategory = selectedCategory === "all" || item.normalizedCategory === selectedCategory
     const matchesSearch =
       item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPrice = applyPriceFilter(item)
-    return matchesCategory && matchesSearch && matchesPrice
+    const matchesDiet = applyDietFilter(item)
+    return matchesCategory && matchesSearch && matchesPrice && matchesDiet
+  })
+
+  // Apply sorting
+  const sortedMenu = [...filteredMenu].sort((a, b) => {
+    if (sortOrder === "priceLow") {
+      return a.price - b.price
+    } else if (sortOrder === "priceHigh") {
+      return b.price - a.price
+    }
+    return 0
   })
 
   // Group menu items by normalized category
-  const groupedMenu = filteredMenu.reduce(
+  const groupedMenu = sortedMenu.reduce(
     (acc, item) => {
       if (!acc[item.normalizedCategory]) {
         acc[item.normalizedCategory] = []
@@ -188,7 +204,7 @@ export default function Menu() {
       price: item.price,
     }))
 
-    const orderData = { table: tableNo, items: orderItems , price: getCartTotal()}
+    const orderData = { table: tableNo, items: orderItems, price: getCartTotal() }
 
     try {
       const res = await fetch("/api/v1/order", {
@@ -218,13 +234,58 @@ export default function Menu() {
     const lowerCategory = category.toLowerCase()
     if (lowerCategory.includes("drink")) {
       return <Coffee size={18} />
-    } else if (lowerCategory.includes("veg")) {
-      return <Utensils size={18} className="text-green-600" />
+    } else if (lowerCategory.includes("veg") && !lowerCategory.includes("non")) {
+      return <Leaf size={18} className="text-green-600" />
     } else if (lowerCategory.includes("non-veg") || lowerCategory.includes("nonveg")) {
-      return <Utensils size={18} className="text-red-600" />
+      return <Drumstick size={18} className="text-red-600" />
     } else {
       return <Utensils size={18} />
     }
+  }
+
+  // Function to render veg/non-veg indicator
+  const renderVegIndicator = (item: MenuItem & { normalizedCategory: string }) => {
+    // First check the API's isVeg field
+    if (item.isVeg !== undefined) {
+      if (item.isVeg) {
+        return (
+          <span className="bg-white shadow-sm text-green-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
+            <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
+              <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+            </span>
+          </span>
+        )
+      } else {
+        return (
+          <span className="bg-white shadow-sm text-red-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
+            <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
+              <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+            </span>
+          </span>
+        )
+      }
+    }
+    
+    // Fallback to category-based detection
+    if (item.normalizedCategory === "Vegetarian") {
+      return (
+        <span className="bg-white shadow-sm text-green-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
+          <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
+            <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+          </span>
+        </span>
+      )
+    } else if (item.normalizedCategory === "Non-Vegetarian") {
+      return (
+        <span className="bg-white shadow-sm text-red-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
+          <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
+            <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+          </span>
+        </span>
+      )
+    }
+    
+    return null
   }
 
   return (
@@ -290,6 +351,52 @@ export default function Menu() {
               {/* Filter dropdown for mobile */}
               {showFilterDropdown && (
                 <div className="md:hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl p-4 z-50 border border-gray-100 top-full">
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Diet Preference</h4>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="diet"
+                          checked={dietFilter === "all"}
+                          onChange={() => setDietFilter("all")}
+                          className="text-amber-600 focus:ring-amber-500"
+                        />
+                        <span className="text-sm text-gray-700">All</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="diet"
+                          checked={dietFilter === "veg"}
+                          onChange={() => setDietFilter("veg")}
+                          className="text-green-600 focus:ring-green-500"
+                        />
+                        <div className="flex items-center gap-1">
+                          <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
+                            <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                          </span>
+                          <span className="text-sm text-gray-700">Vegetarian</span>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="diet"
+                          checked={dietFilter === "non-veg"}
+                          onChange={() => setDietFilter("non-veg")}
+                          className="text-red-600 focus:ring-red-500"
+                        />
+                        <div className="flex items-center gap-1">
+                          <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
+                            <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                          </span>
+                          <span className="text-sm text-gray-700">Non-Vegetarian</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  
                   <div className="mb-4">
                     <h4 className="font-semibold text-gray-800 mb-2">Price Range</h4>
                     <div className="space-y-2">
@@ -390,6 +497,52 @@ export default function Menu() {
                 {showFilterDropdown && (
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl p-4 z-50 border border-gray-100">
                     <div className="mb-4">
+                      <h4 className="font-semibold text-gray-800 mb-2">Diet Preference</h4>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="diet"
+                            checked={dietFilter === "all"}
+                            onChange={() => setDietFilter("all")}
+                            className="text-amber-600 focus:ring-amber-500"
+                          />
+                          <span className="text-sm text-gray-700">All</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="diet"
+                            checked={dietFilter === "veg"}
+                            onChange={() => setDietFilter("veg")}
+                            className="text-green-600 focus:ring-green-500"
+                          />
+                          <div className="flex items-center gap-1">
+                            <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
+                              <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                            </span>
+                            <span className="text-sm text-gray-700">Vegetarian</span>
+                          </div>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="diet"
+                            checked={dietFilter === "non-veg"}
+                            onChange={() => setDietFilter("non-veg")}
+                            className="text-red-600 focus:ring-red-500"
+                          />
+                          <div className="flex items-center gap-1">
+                            <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
+                              <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                            </span>
+                            <span className="text-sm text-gray-700">Non-Vegetarian</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
                       <h4 className="font-semibold text-gray-800 mb-2">Price Range</h4>
                       <div className="space-y-2">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -476,6 +629,47 @@ export default function Menu() {
             </div>
           </div>
 
+          {/* Diet filter quick buttons */}
+          <div className="flex gap-2 mt-3 mb-2">
+            <button
+              onClick={() => setDietFilter("all")}
+              className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1 transition-all ${
+                dietFilter === "all"
+                  ? "bg-amber-500 text-white"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Utensils size={14} />
+              All
+            </button>
+            <button
+              onClick={() => setDietFilter("veg")}
+              className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1 transition-all ${
+                dietFilter === "veg"
+                  ? "bg-green-500 text-white"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <span className="w-3 h-3 border border-current flex items-center justify-center rounded-sm">
+                <span className={`w-1.5 h-1.5 ${dietFilter === "veg" ? "bg-white" : "bg-green-600"} rounded-full`}></span>
+              </span>
+              Veg Only
+            </button>
+            <button
+              onClick={() => setDietFilter("non-veg")}
+              className={`px-3 py-1.5 rounded-full text-sm flex items-center gap-1 transition-all ${
+                dietFilter === "non-veg"
+                  ? "bg-red-500 text-white"
+                  : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <span className="w-3 h-3 border border-current flex items-center justify-center rounded-sm">
+                <span className={`w-1.5 h-1.5 ${dietFilter === "non-veg" ? "bg-white" : "bg-red-600"} rounded-full`}></span>
+              </span>
+              Non-Veg
+            </button>
+          </div>
+
           <div className="overflow-x-auto mt-4 pb-2 flex-1">
             <div className="flex gap-3 min-w-max">
               {categories.map((category) => (
@@ -506,6 +700,23 @@ export default function Menu() {
             </h2>
             <div className="text-sm text-gray-500 flex items-center gap-1">
               <span>{filteredMenu.length}</span> items available
+            </div>
+          </div>
+
+          {/* Legend for veg/non-veg indicators */}
+          <div className="bg-white p-3 rounded-lg mb-4 flex flex-wrap gap-4 items-center text-sm border border-gray-100">
+            <span className="font-medium text-gray-700">Indicators:</span>
+            <div className="flex items-center gap-1">
+              <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
+                <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+              </span>
+              <span>Vegetarian</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
+                <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+              </span>
+              <span>Non-Vegetarian</span>
             </div>
           </div>
 
@@ -547,20 +758,7 @@ export default function Menu() {
                       className="w-full h-full object-cover transition-transform hover:scale-105"
                     />
                     <div className="absolute top-2 left-2 flex gap-2">
-                      {item.normalizedCategory === "Vegetarian" && (
-                        <span className="bg-white shadow-sm text-green-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
-                          <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
-                            <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                          </span>
-                        </span>
-                      )}
-                      {item.normalizedCategory === "Non-Vegetarian" && (
-                        <span className="bg-white shadow-sm text-red-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
-                          <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
-                            <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-                          </span>
-                        </span>
-                      )}
+                      {renderVegIndicator(item)}
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent h-16"></div>
                   </div>
@@ -608,7 +806,12 @@ export default function Menu() {
                         {groupedMenu[category].length} items
                       </span>
                     </div>
-                    <button className="text-amber-600 text-sm font-medium hover:underline">View All</button>
+                    <button 
+                      onClick={() => setSelectedCategory(category)}
+                      className="text-amber-600 text-sm font-medium hover:underline"
+                    >
+                      View All
+                    </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {groupedMenu[category].map((item) => (
@@ -625,20 +828,7 @@ export default function Menu() {
                             className="w-full h-full object-cover transition-transform hover:scale-105"
                           />
                           <div className="absolute top-2 left-2 flex gap-2">
-                            {item.normalizedCategory === "Vegetarian" && (
-                              <span className="bg-white shadow-sm text-green-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
-                                <span className="w-4 h-4 border border-green-600 flex items-center justify-center rounded-sm">
-                                  <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                                </span>
-                              </span>
-                            )}
-                            {item.normalizedCategory === "Non-Vegetarian" && (
-                              <span className="bg-white shadow-sm text-red-600 text-xs font-medium p-1 rounded-md flex items-center justify-center">
-                                <span className="w-4 h-4 border border-red-600 flex items-center justify-center rounded-sm">
-                                  <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-                                </span>
-                              </span>
-                            )}
+                            {renderVegIndicator(item)}
                           </div>
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent h-16"></div>
                         </div>
@@ -746,7 +936,17 @@ export default function Menu() {
                     {cart.map((item) => (
                       <li key={item.id} className="py-4 flex items-start gap-3 relative">
                         <div className="min-w-[24px] mt-1">
-                          {item.normalizedCategory === "Vegetarian" ? (
+                          {item.isVeg !== undefined ? (
+                            item.isVeg ? (
+                              <span className="w-5 h-5 border border-green-600 flex items-center justify-center rounded-sm">
+                                <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                              </span>
+                            ) : (
+                              <span className="w-5 h-5 border border-red-600 flex items-center justify-center rounded-sm">
+                                <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                              </span>
+                            )
+                          ) : item.normalizedCategory === "Vegetarian" ? (
                             <span className="w-5 h-5 border border-green-600 flex items-center justify-center rounded-sm">
                               <span className="w-2 h-2 bg-green-600 rounded-full"></span>
                             </span>
