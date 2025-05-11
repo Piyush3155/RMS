@@ -23,27 +23,28 @@ export async function GET() {
           quantity: number
         }>
         totalPrice: number
-        orderIds: number[] // New array to store all orderIds for a table
+        orderIds: number[] // Array to store all orderIds for a table
       }
     > = {}
 
     for (const order of orders) {
       const tableNo = order.tableNumber
-      const parsedItems = (() => {
-        try {
-          const data = JSON.parse(order.items)
-          // Ensure each item has the required properties
-          return Array.isArray(data)
-            ? data.map((item) => ({
-                name: item.itemName || item.name || "Unknown Item",
-                price: item.price || 0,
-                quantity: item.quantity || 1,
-              }))
-            : [{ name: order.items, price: 0, quantity: 1 }]
-        } catch {
-          return [{ name: order.items, price: 0, quantity: 1 }]
-        }
-      })()
+      let parsedItems = []
+
+      try {
+        const data = JSON.parse(order.items)
+        // Ensure each item has the required properties
+        parsedItems = Array.isArray(data)
+          ? data.map((item) => ({
+              name: item.itemName || item.name || "Unknown Item",
+              price: item.price || 0,
+              quantity: item.quantity || 1,
+            }))
+          : [{ name: String(order.items), price: 0, quantity: 1 }]
+      } catch {
+        // Handle parsing error safely
+        parsedItems = [{ name: String(order.items || "Unknown Item"), price: 0, quantity: 1 }]
+      }
 
       if (!groupedOrders[tableNo]) {
         groupedOrders[tableNo] = {
@@ -51,15 +52,15 @@ export async function GET() {
           orders: [],
           items: [],
           totalPrice: 0,
-          orderIds: [],  // Initialize orderIds array
+          orderIds: [],
         }
       }
 
       groupedOrders[tableNo].orders.push(order)
       groupedOrders[tableNo].items.push(...parsedItems)
-      groupedOrders[tableNo].totalPrice += order.price
-      if (order.orderId !== null) {
-        groupedOrders[tableNo].orderIds.push(order.orderId) // Add orderId to the list
+      groupedOrders[tableNo].totalPrice += order.price || 0
+      if (order.orderId !== null && order.orderId !== undefined) {
+        groupedOrders[tableNo].orderIds.push(order.orderId)
       }
     }
 
@@ -68,9 +69,11 @@ export async function GET() {
 
     return NextResponse.json(formattedOrders)
   } catch (error) {
-    console.error("Error fetching orders:", error)
+    console.error("Error fetching orders:", error instanceof Error ? error.message : "Unknown error")
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect().catch((e) => {
+      console.error("Error disconnecting from Prisma:", e instanceof Error ? e.message : "Unknown error")
+    })
   }
 }

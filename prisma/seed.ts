@@ -4,9 +4,9 @@ const prisma = new PrismaClient();
 
 async function main() {
   const admins = [
-    { name: "Piyush", email: "piyushgurav176@gmail.com", password: "piyush123" },
-    { name: "Srinidhi", email: "srinidhikittur@gmail.com", password: "srinidhi123" },
-    { name: "Sanika", email: "sanikavandure@gmail.com", password: "sanika123" },
+    { name: "Piyush", email: "piyushgurav176@gmail.com", password: "piyush123" ,role : "chef"},
+    { name: "Srinidhi", email: "srinidhikittur@gmail.com", password: "srinidhi123" ,role:"manager"},
+    { name: "Sanika", email: "sanikavandure@gmail.com", password: "sanika123",role:"manager" },
   ];
 
   await Promise.all(

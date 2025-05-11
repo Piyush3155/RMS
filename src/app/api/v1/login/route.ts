@@ -17,11 +17,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Generate JWT Token
+    const response = NextResponse.json({ success: true, message: "Login successful", role: admin.role });
 
-    // Set Token in Cookies
-    const response = NextResponse.json({ success: true, message: "Login successful" });
+    // Set cookies for username, role, and name
     response.cookies.set("username", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
+
+    response.cookies.set("role", admin.role, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
+
+    response.cookies.set("name", admin.name, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",

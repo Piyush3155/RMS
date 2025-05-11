@@ -37,10 +37,12 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^15.4.0",
     "react-icons": "^5.4.0",
+    "react-toastify": "^11.0.5",
     "recharts": "^2.15.3",
     "resend": "^4.5.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "ws": "^8.18.1"

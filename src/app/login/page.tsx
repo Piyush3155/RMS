@@ -1,19 +1,33 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Show toast if redirected with access denied
+  useEffect(() => {
+    const errorParam = searchParams.get("error")
+    if (errorParam === "access-denied") {
+      toast.error("You do not have access to this page.", {
+        position: "bottom-right",
+        autoClose: 3000,
+      })
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,6 +38,7 @@ export default function LoginPage() {
       return
     }
 
+    setLoading(true)
     try {
       const res = await fetch("/api/v1/login", {
         method: "POST",
@@ -32,30 +47,41 @@ export default function LoginPage() {
       })
 
       const data = await res.json()
+      setLoading(false)
+
       if (!res.ok) throw new Error(data.error || "Login failed")
-      console.log("Login successful:", data)
-      router.push("/manager")
+
+      if (data.role === "manager") {
+        router.push("/manager")
+      } else if (data.role === "chef") {
+        router.push("/kitchen")
+      } else {
+        setError("Unauthorized role")
+      }
     } catch (err: unknown) {
+      setLoading(false)
       if (err instanceof Error) {
         setError(err.message)
+        toast.error(err.message, { position: "bottom-right", autoClose: 3000 })
       } else {
         setError("An unknown error occurred.")
+        toast.error("An unknown error occurred.", { position: "bottom-right", autoClose: 3000 })
       }
     }
   }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
-      {/* Left Side Image with Overlay */}
+      <ToastContainer />
+
+      {/* Left Side Image */}
       <div className="relative w-full md:w-3/5 h-64 md:h-auto overflow-hidden">
-        <div className="absolute inset-0  z-10" />
         <Image src="/food.png" alt="Delicious food" fill className="object-cover object-center" priority />
       </div>
 
-      {/* Right Side Login with Content */}
+      {/* Right Side Login */}
       <div className="w-full md:w-2/5 flex flex-col justify-center p-8 md:p-12 bg-white">
         <div className="max-w-md mx-auto w-full">
-          {/* Logo and Welcome */}
           <div className="mb-10 text-center">
             <div className="flex items-center justify-center mb-4">
               <Image src="/biteandco.png" alt="Bites & Co Logo" width={150} height={50} priority />
@@ -63,7 +89,6 @@ export default function LoginPage() {
             <p className="text-gray-600">Welcome back! Please log in to your account.</p>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
               <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500 text-red-700 animate-fadeIn">
@@ -71,31 +96,27 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Email Field */}
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email Address
               </label>
-              <div className="relative">
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none"
-                  placeholder="your@email.com"
-                />
-              </div>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                placeholder="your@email.com"
+              />
             </div>
 
-            {/* Password Field */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-xs text-amber-700 hover:text-amber-800 hover:underline">
+                <Link href="/forgot-password" className="text-xs text-amber-700 hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -106,29 +127,28 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none"
+                  className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
+              disabled={loading}
               className="w-full py-3 px-4 rounded-lg font-medium text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
-              Sign In
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
 
-          {/* Contact Support */}
           <div className="text-center mt-8">
             <p className="text-sm text-gray-600">
               Need assistance?{" "}
@@ -138,7 +158,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Footer */}
           <div className="mt-12 pt-6 border-t border-gray-200 text-center">
             <p className="text-xs text-gray-500">© {new Date().getFullYear()} Bites & Co. All rights reserved.</p>
           </div>

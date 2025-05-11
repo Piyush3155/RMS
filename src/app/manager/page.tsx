@@ -1,6 +1,7 @@
 "use client"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import KitchenDashboard from "@/components/kitchendashboard/page"
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
@@ -28,6 +29,8 @@ import {
   Filter,
   ArrowUpDown,
   LogOut,
+  QrCode,
+  CookingPot,
 } from "lucide-react"
 import {
   Bar,
@@ -46,6 +49,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import EditMenuModal from "@/components/editemenu/page"
+import QRCodeGenerator from "../QR/page"
 
 interface MenuItem {
   id: number
@@ -179,6 +183,10 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [itemToEdit, setItemToEdit] = useState<MenuItem | null>(null)
+  const [customerEmail, setCustomerEmail] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [tableStatus, setTableStatus] = useState<{ [key: number]: boolean }>({})
 
   const notificationRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -202,9 +210,15 @@ export default function AdminDashboard() {
     { name: "Gulab Jamun", sold: 65, revenue: 6500 },
   ]
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
   useEffect(() => {
     if (activeTab === "orders") {
       fetchOrders()
+      checkTableAvailability()
     } else if (activeTab === "menu") {
       fetchMenuItems()
     } else if (activeTab === "sales") {
@@ -327,6 +341,37 @@ export default function AdminDashboard() {
     }
   }
 
+  async function checkTableAvailability() {
+    try {
+      const res = await fetch("/api/v1/fetchorders", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      if (!res.ok) {
+        console.error("Failed to fetch orders", res.statusText)
+        return
+      }
+
+      const data = await res.json()
+
+      // Create an object to track which tables are occupied
+      const occupiedTables: { [key: number]: boolean } = {}
+
+      // Mark tables as occupied based on orders data
+      data.forEach((group: { tableNumber: number }) => {
+        occupiedTables[group.tableNumber] = true
+      })
+
+      // Set the table status
+      setTableStatus(occupiedTables)
+
+      console.log("Table status updated", occupiedTables)
+    } catch (error) {
+      console.error("Error checking table availability:", error)
+    }
+  }
+
   async function fetchMenuItems() {
     setIsMenuLoading(true)
     try {
@@ -443,6 +488,22 @@ export default function AdminDashboard() {
     }
   }
 
+  const [initial, setInitial] = useState("")
+
+  useEffect(() => {
+    const fetchName = async () => {
+      const res = await fetch("/api/v1/cookiename")
+      if (res.ok) {
+        const data = await res.json()
+        if (data.name) {
+          setInitial(data.name)
+        }
+      }
+    }
+
+    fetchName()
+  }, [])
+
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -538,83 +599,83 @@ export default function AdminDashboard() {
     const totalAmount = totalItemsPrice + gstAmount
 
     const content = `
-      <html>
-        <head>
-          <title>Bill - Order #${order.id}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-            .bill { max-width: 300px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .restaurant-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-            .contact { font-size: 12px; margin-bottom: 3px; }
-            .address { font-size: 12px; margin-bottom: 15px; }
-            .bill-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
-            .bill-details { margin-bottom: 15px; font-size: 12px; }
-            .bill-details div { display: flex; justify-content: space-between; margin-bottom: 5px; }
-            .items { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
-            .item-name { flex: 2; }
-            .item-qty { flex: 1; text-align: center; }
-            .item-price { flex: 1; text-align: right; }
-            .total { font-weight: bold; display: flex; justify-content: space-between; font-size: 14px; margin-top: 10px; }
-            .footer { text-align: center; margin-top: 20px; font-size: 12px; }
-            .gst {text-align:end;font-size:10px;margin-top:2px;}
-          </style>
-        </head>
-        <body>
-          <div class="bill">
-            <div class="header">
-              <img src="/biteandco.png" alt="" style="width:100px; height:100px;"/>
-              <div class="contact">Contact: +91 9874563210</div>
-              <div class="address">Address: Belgavi</div>
-            </div>
-            
-            <div class="bill-title">BILL RECEIPT</div>
-            
-            <div class="bill-details">
-              <div><span>Order #:</span> <span>${order.orderId}</span></div>
-              <div><span>Table:</span> <span>${order.tableNumber}</span></div>
-              <div><span>Date:</span> <span>${new Date(order.createdAt).toLocaleDateString()}</span></div>
-              <div><span>Time:</span> <span>${new Date(order.createdAt).toLocaleTimeString()}</span></div>
-            </div>
-            
-            <div class="items">
-              <div class="item" style="font-weight: bold;">
-                <span class="item-name">Item</span>
-                <span class="item-qty">Qty</span>
-                <span class="item-price">Price</span>
-              </div>
-              ${order.items
-                .map(
-                  (item) => `
-                <div class="item">
-                  <span class="item-name">${item.name}</span>
-                  <span class="item-qty">${item.quantity || 1}</span>
-                  <span class="item-price">₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>          
-                </div>
-              `,
-                )
-                .join("")}
-            </div>
-            <div class="gst">
-            <br/>
-                <span>CGST : ₹${(gstAmount / 2).toFixed(2)}
-                <br/>
-                <span>SGST : ₹${(gstAmount / 2).toFixed(2)}
-            </div>
-            <div class="total">
-              <span>Total Amount:</span>
-              <span>₹${totalAmount.toFixed(2)}</span>
-            </div>
-            
-            <div class="footer">
-              <p>Thank you for dining with us!</p>
-              <p>Visit again soon!</p>
-            </div>
+    <html>
+      <head>
+        <title>Bill - Order #${order.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+          .bill { max-width: 300px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .restaurant-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+          .contact { font-size: 12px; margin-bottom: 3px; }
+          .address { font-size: 12px; margin-bottom: 15px; }
+          .bill-title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 5px; }
+          .bill-details { margin-bottom: 15px; font-size: 12px; }
+          .bill-details div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+          .items { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+          .item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+          .item-name { flex: 2; }
+          .item-qty { flex: 1; text-align: center; }
+          .item-price { flex: 1; text-align: right; }
+          .total { font-weight: bold; display: flex; justify-content: space-between; font-size: 14px; margin-top: 10px; }
+          .footer { text-align: center; margin-top: 20px; font-size: 12px; }
+          .gst {text-align:end;font-size:10px;margin-top:2px;}
+        </style>
+      </head>
+      <body>
+        <div class="bill">
+          <div class="header">
+            <img src="/biteandco.png" alt="" style="width:100px; height:100px;"/>
+            <div class="contact">Contact: +91 9874563210</div>
+            <div class="address">Address: Belgavi</div>
           </div>
-        </body>
-      </html>
-    `
+          
+          <div class="bill-title">BILL RECEIPT</div>
+          
+          <div class="bill-details">
+            <div><span>Order #:</span> <span>${order.orderId}</span></div>
+            <div><span>Table:</span> <span>${order.tableNumber}</span></div>
+            <div><span>Date:</span> <span>${new Date(order.createdAt).toLocaleDateString()}</span></div>
+            <div><span>Time:</span> <span>${new Date(order.createdAt).toLocaleTimeString()}</span></div>
+          </div>
+          
+          <div class="items">
+            <div class="item" style="font-weight: bold;">
+              <span class="item-name">Item</span>
+              <span class="item-qty">Qty</span>
+              <span class="item-price">Price</span>
+            </div>
+            ${order.items
+              .map(
+                (item) => `
+              <div class="item">
+                <span class="item-name">${item.name}</span>
+                <span class="item-qty">${item.quantity || 1}</span>
+                <span class="item-price">₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>          
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+          <div class="gst">
+          <br/>
+              <span>CGST : ₹${(gstAmount / 2).toFixed(2)}
+              <br/>
+              <span>SGST : ₹${(gstAmount / 2).toFixed(2)}
+          </div>
+          <div class="total">
+            <span>Total Amount:</span>
+            <span>₹${totalAmount.toFixed(2)}</span>
+          </div>
+          
+          <div class="footer">
+            <p>Thank you for dining with us!</p>
+            <p>Visit again soon!</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
 
     printWindow.document.open()
     printWindow.document.write(content)
@@ -624,9 +685,97 @@ export default function AdminDashboard() {
     setTimeout(() => {
       printWindow.print()
 
+      // If customer provided email, send the bill via email
+      if (customerEmail.trim() && isValidEmail(customerEmail)) {
+        sendBillByEmail(customerEmail, order, "", totalAmount)
+      }
+
       // Delete the order from the database after printing
       deleteOrder(order.id)
     }, 250)
+  }
+
+  const sendBillByEmail = async (email: string, order: Order, htmlContent: string, totalAmount: number) => {
+    try {
+      setIsSendingEmail(true)
+
+      // Show loading notification
+      const notificationId = Date.now()
+      setNotifications((prev) => [
+        {
+          id: notificationId,
+          title: "Sending Email",
+          message: `Sending bill to ${email}...`,
+          time: "Just now",
+          read: false,
+          type: "info" as const,
+        },
+        ...prev,
+      ])
+
+      const response = await fetch("/api/v1/billemail", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: `Your Bill Receipt - Order #${order.orderId}`,
+          orderId: order.orderId,
+          tableNumber: order.tableNumber,
+          totalAmount: totalAmount,
+          items: order.items, // Pass the items directly
+        }),
+      })
+
+      if (response.ok) {
+        // Update notification to success
+        setNotifications((prev) =>
+          prev.map((notification) =>
+            notification.id === notificationId
+              ? {
+                  ...notification,
+                  title: "Email Sent",
+                  message: `Bill successfully sent to ${email}`,
+                  type: "info" as const,
+                }
+              : notification,
+          ),
+        )
+        // Clear email field after successful send
+        setCustomerEmail("")
+      } else {
+        // Update notification to error
+        setNotifications((prev) =>
+          prev.map((notification) =>
+            notification.id === notificationId
+              ? {
+                  ...notification,
+                  title: "Email Failed",
+                  message: `Failed to send bill to ${email}`,
+                  type: "alert" as const,
+                }
+              : notification,
+          ),
+        )
+      }
+    } catch (error) {
+      console.error("Error sending email:", error)
+      // Add error notification
+      setNotifications((prev) => [
+        {
+          id: Date.now(),
+          title: "Email Error",
+          message: `Failed to send bill to ${email}`,
+          time: "Just now",
+          read: false,
+          type: "alert" as const,
+        },
+        ...prev,
+      ])
+    } finally {
+      setIsSendingEmail(false)
+    }
   }
 
   const deleteOrder = async (orderId: number) => {
@@ -827,14 +976,57 @@ export default function AdminDashboard() {
             </table>
           </div>
 
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+              <div className="flex-1">
+                <label htmlFor="customer-email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Email (Optional)
+                </label>
+                <div className="relative">
+                  <input
+                    id="customer-email"
+                    type="email"
+                    placeholder="customer@example.com"
+                    value={customerEmail}
+                    onChange={(e) => {
+                      setCustomerEmail(e.target.value)
+                      if (e.target.value && !isValidEmail(e.target.value)) {
+                        setEmailError("Please enter a valid email address")
+                      } else {
+                        setEmailError("")
+                      }
+                    }}
+                    className={`w-full p-3 border ${
+                      emailError
+                        ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:ring-amber-500 focus:border-amber-500"
+                    } rounded-xl transition-all`}
+                  />
+                  {emailError && <p className="mt-1 text-xs text-red-500">{emailError}</p>}
+                </div>
+              </div>
+              <div className="flex gap-3 mt-4 md:mt-0">
+                <button
+                  onClick={() => printBill(selectedOrder)}
+                  disabled={(customerEmail.trim() !== "" && !isValidEmail(customerEmail)) || isSendingEmail}
+                  className={`bg-amber-500 text-white px-4 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-1 ${
+                    (customerEmail.trim() !== "" && !isValidEmail(customerEmail)) || isSendingEmail
+                      ? "opacity-70 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  <FileText size={16} />
+                  {isSendingEmail
+                    ? "Sending..."
+                    : customerEmail.trim() && isValidEmail(customerEmail)
+                      ? "Print & Email Bill"
+                      : "Print Bill"}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-4 flex justify-between items-center">
-            <button
-              onClick={() => printBill(selectedOrder)}
-              className="bg-amber-500 text-white px-4 py-2 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-1"
-            >
-              <FileText size={16} />
-              Print Bill
-            </button>
             <span className="text-xs text-gray-500">
               Created at: {new Date(selectedOrder.createdAt).toLocaleString()}
             </span>
@@ -1374,6 +1566,51 @@ export default function AdminDashboard() {
     </div>
   )
 
+  const renderTableManagement = () => (
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <LayoutDashboard className="text-amber-500" size={24} />
+          Table Management
+        </h2>
+        <button
+          onClick={checkTableAvailability}
+          className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
+        >
+          <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+          {isLoading ? "Loading..." : "Refresh"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 9 }, (_, i) => i + 1).map((tableNumber) => (
+          <div
+            key={tableNumber}
+            className={`p-6 rounded-xl border ${
+              tableStatus[tableNumber] ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"
+            }`}
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold">Table {tableNumber}</h3>
+              <div className={`h-4 w-4 rounded-full ${tableStatus[tableNumber] ? "bg-red-500" : "bg-green-500"}`}></div>
+            </div>
+
+            <p className={`mt-2 ${tableStatus[tableNumber] ? "text-red-700" : "text-green-700"}`}>
+              {tableStatus[tableNumber] ? "Engaged" : "Available"}
+            </p>
+            {tableStatus[tableNumber] && (
+              <div className="mt-4 text-sm">
+                <p className="text-gray-600">
+                  Order ID: {orders.find((order) => order.tableNumber === tableNumber)?.orderId || "N/A"}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       {/* Sidebar for larger screens */}
@@ -1419,13 +1656,37 @@ export default function AdminDashboard() {
               <span className="font-medium">Sales</span>
             </button>
 
-            <a
-              href="/kitchen"
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors text-gray-600 hover:bg-gray-50"
+            <button
+              onClick={() => setActiveTab("tables")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "tables" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
             >
-              <FileText size={18} />
+              <LayoutDashboard size={18} />
+              <span className="font-medium">Tables</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("qrcodes")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "qrcodes" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <QrCode size={18} />
+              <span className="font-medium">QR Codes</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("kitchen")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "kitchen" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <CookingPot size={18} />
               <span className="font-medium">Kitchen Dashboard</span>
-            </a>
+            </button>
+
+            {/* Kitchen dashboard is now integrated as a tab */}
           </div>
         </div>
       </div>
@@ -1443,7 +1704,9 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Admin</span>
+              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                {initial || "G"}
+              </span>
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -1486,10 +1749,34 @@ export default function AdminDashboard() {
             <BarChartIcon size={18} className="mx-auto mb-1" />
             <span className="text-xs">Sales</span>
           </button>
-          <a href="/kitchen-dashboard" className="flex-1 py-3 text-center border-b-2 border-transparent text-gray-600">
+          <button
+            onClick={() => setActiveTab("tables")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "tables" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <LayoutDashboard size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Tables</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("qrcodes")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "qrcodes" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
             <FileText size={18} className="mx-auto mb-1" />
+            <span className="text-xs">QR Codes</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("kitchen")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "kitchen" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <CookingPot size={18} className="mx-auto mb-1" />
             <span className="text-xs">Kitchen</span>
-          </a>
+          </button>
+          {/* Kitchen dashboard is now integrated as a tab */}
         </div>
       </div>
 
@@ -1502,6 +1789,9 @@ export default function AdminDashboard() {
               {activeTab === "orders" && "Orders Management"}
               {activeTab === "menu" && "Menu Management"}
               {activeTab === "sales" && "Sales Analytics"}
+              {activeTab === "tables" && "Tables Management"}
+              {activeTab === "qrcodes" && "QR Code Management"}
+              {activeTab === "kitchen" && "Kitchen Dashboard"}
             </h2>
           </div>
 
@@ -1601,7 +1891,7 @@ export default function AdminDashboard() {
                 <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
                   <User size={16} className="text-amber-600" />
                 </div>
-                <span className="font-medium text-sm">Admin</span>
+                <span className="font-medium text-sm">{initial || "G"}</span>
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
 
@@ -1631,6 +1921,9 @@ export default function AdminDashboard() {
         {activeTab === "orders" && renderOrders()}
         {activeTab === "menu" && renderMenu()}
         {activeTab === "sales" && renderSalesAnalysis()}
+        {activeTab === "tables" && renderTableManagement()}
+        {activeTab === "qrcodes" && <QRCodeGenerator />}
+        {activeTab === "kitchen" && <KitchenDashboard />}
       </main>
       {editModalOpen && (
         <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />

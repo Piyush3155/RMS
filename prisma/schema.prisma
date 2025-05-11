@@ -20,6 +20,7 @@ model admin {
   name     String @unique(map: "Admin_name_key")
   email    String @unique(map: "Admin_email_key")
   password String
+  role    String
 }
 
 model kitchendashboard {

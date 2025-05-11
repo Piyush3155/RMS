@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
+import { useSearchParams } from "next/navigation"  // Import useSearchParams
+import { toast } from "react-toastify"
 import { ChefHat, Trash2, Loader2, Clock, CheckCircle, AlertCircle, MoreHorizontal } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import Image from "next/image"
 
 type OrderStatus = "received" | "preparing" | "completed" | "pending"
 
@@ -28,14 +30,12 @@ interface Order {
   notes?: string
 }
 
-// API: Fetch Orders
 const fetchOrders = async (): Promise<Order[]> => {
   const res = await fetch("/api/v1/kitchenorders")
   if (!res.ok) throw new Error("Failed to fetch orders")
   return res.json()
 }
 
-// API: Update Order Status
 const updateOrderStatusAPI = async (orderId: string, newStatus: OrderStatus) => {
   const res = await fetch(`/api/v1/kitchenorders/${orderId}`, {
     method: "PUT",
@@ -51,9 +51,14 @@ export default function KitchenPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all")
   const [currentDate, setCurrentDate] = useState<string>("")
+  const searchParams = useSearchParams()  // Hook to get query params
 
   useEffect(() => {
-    // Set the current date on the client side
+    const error = searchParams.get("error") // Get the 'error' query param
+    if (error === "access-denied") {
+      toast.error("You don't have access to this page")  // Show error toast
+    }
+
     setCurrentDate(
       new Date().toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
     )
@@ -74,7 +79,7 @@ export default function KitchenPage() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [searchParams])
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -82,14 +87,21 @@ export default function KitchenPage() {
       setOrders((prevOrders) =>
         prevOrders.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)),
       )
+      toast.success(`Order marked as ${newStatus}`)
     } catch (error) {
       console.error(error)
+      toast.error("Failed to update order status")
     }
   }
 
   const discardOrder = async (orderId: string) => {
-    await fetch(`/api/v1/kitchenorders/${orderId}`, { method: "DELETE" })
-    setOrders(orders.filter((order) => order.id !== orderId))
+    try {
+      await fetch(`/api/v1/kitchenorders/${orderId}`, { method: "DELETE" })
+      setOrders(orders.filter((order) => order.id !== orderId))
+      toast.info("Order deleted")
+    } catch {
+      toast.error("Failed to delete order")
+    }
   }
 
   const formatTime = (timestamp: string) => {
@@ -126,7 +138,6 @@ export default function KitchenPage() {
     }
   }
 
-
   const filteredOrders = activeTab === "all" ? orders : orders.filter((order) => order.status === activeTab)
 
   const getOrderCount = (status: OrderStatus | "all") => {
@@ -137,11 +148,9 @@ export default function KitchenPage() {
   return (
     <div className="container mx-auto py-6 px-4 min-h-screen">
       <header className="mb-8">
-        <div className="div">
-        </div>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
-           <Image src="/biteandco.png" alt="Logo" width={50} height={50} className="w-20 h-20"/>
+            <Image src="/biteandco.png" alt="Logo" width={50} height={50} className="w-20 h-20"/>
           </h1>
           <div className="text-sm text-muted-foreground">{currentDate}</div>
         </div>

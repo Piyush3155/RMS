@@ -1,23 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const username = req.cookies.get("username")?.value;
+  const { pathname } = req.nextUrl
+  const username = req.cookies.get("username")?.value
+  const role = req.cookies.get("role")?.value?.toLowerCase()
 
-  const normalizedPath = pathname.replace(/\/$/, "");
-  const publicRoutes = ["/login", "/"];
+  const normalizedPath = pathname.replace(/\/$/, "")
+  const publicRoutes = ["/login", "/"]
 
-  if (publicRoutes.includes(normalizedPath)) {
-    return NextResponse.next();
+  if (publicRoutes.includes(normalizedPath)) return NextResponse.next()
+  if (!username || !role) return NextResponse.redirect(new URL("/login", req.url))
+
+  if (normalizedPath.startsWith("/manager") && role !== "manager") {
+    return NextResponse.redirect(new URL("/kitchen?error=access-denied", req.url))
   }
 
-  if (!username) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  if (normalizedPath.startsWith("/kitchen") && !["manager", "chef", "waiter"].includes(role)) {
+    return NextResponse.redirect(new URL("/login?error=access-denied", req.url))
   }
 
-  return NextResponse.next();
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/user/:path*", "/dash/:path*", "/manager/:path*", "/admin/:path*"],
-};
+  matcher: ["/manager/:path*", "/kitchen/:path*"],
+}
