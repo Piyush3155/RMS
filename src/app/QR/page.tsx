@@ -153,12 +153,13 @@ export default function QRCodeGenerator() {
 
               {origin && (
                 <div className="bg-white p-2 rounded-lg border border-gray-200">
-                  <QRCodeCanvas
-                    value={`http://192.168.29.167:3000/orders?table=${tableNo}`}
-                    size={150}
-                    level="H"
-                    includeMargin={true}
-                  />
+             <QRCodeCanvas
+                value={`${window.location.origin}/orders?table=${tableNo}`}
+                size={150}
+                level="H"
+                includeMargin={true}
+              />
+
                 </div>
               )}
 

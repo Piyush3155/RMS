@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <img src="biteandco.png" alt="Restaurant Logo" style="width: 150px; height: auto;" />
+          <img src="/biteandco.png" alt="Restaurant Logo" style="width: 150px; height: auto;" />
           <div style="color: #666; font-size: 14px;">
             <p>Contact: +91 9874563210</p>
             <p>Address: Belgavi</p>
