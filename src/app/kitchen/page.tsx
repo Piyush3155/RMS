@@ -46,7 +46,9 @@ const updateOrderStatusAPI = async (orderId: string, newStatus: OrderStatus) => 
   return res.json()
 }
 
-export default function KitchenPage() {
+import { Suspense } from "react"
+
+function KitchenPageContent() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all")
@@ -283,3 +285,12 @@ export default function KitchenPage() {
     </div>
   )
 }
+
+export default function KitchenPage() {
+  return (
+    <Suspense fallback={<div className="text-center p-12"><Loader2 className="animate-spin mx-auto text-amber-500 mb-4" size={48} /><p className="text-muted-foreground">Loading kitchen...</p></div>}>
+      <KitchenPageContent />
+    </Suspense>
+  )
+}
+

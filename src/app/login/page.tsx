@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { Suspense, useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
@@ -9,7 +8,7 @@ import Link from "next/link"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
-export default function LoginPage() {
+function LoginPageComponent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -164,5 +163,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPageComponent />
+    </Suspense>
   )
 }
