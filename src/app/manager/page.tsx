@@ -32,20 +32,7 @@ import {
   QrCode,
   CookingPot,
 } from "lucide-react"
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import EditMenuModal from "@/components/editemenu/page"
@@ -909,10 +896,10 @@ export default function AdminDashboard() {
                   <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">Itemnames</th>
                   <th className="p-3 font-semibold text-gray-600 text-right">Price</th>
                   <th className="p-3 font-semibold text-gray-600 text-center">Qty</th>
-                  <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-xl">Status</th>
+                  <th className="p-3 font-semibold text-gray-600 text-right rounded-tr-xl">Total</th>
                 </tr>
               </thead>
-              <tbody className=" border-b border-gray-200">
+              <tbody className="border-b border-gray-200">
                 {selectedOrder.items.map((item, index) => (
                   <tr key={index} className="border-b border-gray-100">
                     <td className="p-3">{item.name}</td>
@@ -921,17 +908,7 @@ export default function AdminDashboard() {
                       <span className="bg-gray-200 px-2 py-1 rounded-lg">{item.quantity || 1}</span>
                     </td>
                     <td className="p-3 text-right">
-                      <span
-                        className={`px-2 py-1 rounded-lg ${
-                          selectedOrder.status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : selectedOrder.status === "pending"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {selectedOrder.status}
-                      </span>
+                     ₹{(item.price * (item.quantity || 1)).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -1140,8 +1117,7 @@ export default function AdminDashboard() {
                 <option value="Main Course">Main Course</option>
                 <option value="Starter">Starter</option>
                 <option value="Dessert">Dessert</option>
-                <option value="Snacks">Snacks</option>
-                <option value="Fast Food">Fast Food</option>
+                <option value="Indian Bread">Indian Bread</option>
               </select>
             </div>
 
@@ -1394,11 +1370,7 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">Sales Trend</h3>
-          <select className="bg-gray-50 border border-gray-300 text-gray-700 rounded-xl p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-            <option>Last 90 days</option>
-          </select>
+          <h3 className="bg-gray-50 border border-gray-300 text-gray-700 rounded-xl p-2 text-sm">Last 7 Days</h3>
         </div>
 
         <div className="h-80">
@@ -1434,85 +1406,6 @@ export default function AdminDashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Top Selling Items</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={topSellingItems}
-                layout="vertical"
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" width={100} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#fff",
-                    border: "1px solid #f59e0b",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                  }}
-                  formatter={(value, name) => [
-                    name === "sold" ? `${value} units` : `₹${value}`,
-                    name === "sold" ? "Units Sold" : "Revenue",
-                  ]}
-                />
-                <Bar dataKey="sold" fill="#fbbf24" name="Units Sold" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="revenue" fill="#f59e0b" name="Revenue (₹)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Category Distribution</h3>
-          <div className="h-80">
-            {isSalesLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Skeleton className="h-60 w-60 rounded-full" />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: "Veg", value: 35 },
-                      { name: "Non-Veg", value: 40 },
-                      { name: "Drinks", value: 15 },
-                      { name: "Desserts", value: 10 },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#f59e0b"
-                    dataKey="value"
-                  >
-                    {[
-                      { name: "Veg", value: 35 },
-                      { name: "Non-Veg", value: 40 },
-                      { name: "Drinks", value: 15 },
-                      { name: "Desserts", value: 10 },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${entry.name}`} fill={["#f59e0b", "#d97706", "#b45309", "#92400e"][index % 4]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`${value} items`, "Count"]} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
         </div>
       </div>
 

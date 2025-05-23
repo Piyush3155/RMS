@@ -119,7 +119,7 @@ export async function GET() {
     }));
 
     // Recent orders
-    const recentOrders = await prisma.fetchorder.findMany({
+    const recentOrders = await prisma.orderanalytics.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
     });

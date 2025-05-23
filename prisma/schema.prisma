@@ -7,14 +7,6 @@ datasource db {
   url      = env("DATABASE_URL_1")
 }
 
-model user {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique(map: "User_email_key")
-  username String  @unique(map: "User_username_key")
-  password String
-  name     String?
-}
-
 model admin {
   id       Int    @id @default(autoincrement())
   name     String @unique(map: "Admin_name_key")
@@ -42,15 +34,6 @@ model Menu {
   isVeg       Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
-
-
-model order {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  username  String
-  items     orderitem[]
-}
-
 model order2 {
   id          Int      @id @default(autoincrement())
   tableNumber Int
@@ -72,28 +55,4 @@ model orderanalytics {
   numericOrderId Int?     // Added to store the 6-digit order ID
 }
 
-model orderitem {
-  id       Int    @id @default(autoincrement())
-  orderId  Int
-  quantity Int
-  imageUrl String
-  itemName String
-  price    Int
 
-  order order @relation(fields: [orderId], references: [id])
-
-  @@index([orderId], map: "OrderItem_orderId_fkey")
-}
-
-model fetchorder {
-  id          Int      @id @default(autoincrement())
-  tableNumber Int
-  items       String
-  createdAt   DateTime @default(now())
-  price       Float
-  status      String   @default("pending")
-  orderId     Int?
-  quantity    Int?     @default(1)
-  itemName    String?
-  numericOrderId Int?  // Added to store the 6-digit order ID
-}

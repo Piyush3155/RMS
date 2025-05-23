@@ -113,18 +113,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Insert into fetchorder
-      await prisma.fetchorder.createMany({
-        data: items.map((item: { itemName: string; quantity: number; price: number }) => ({
-          tableNumber,
-          items: item.itemName,
-          itemName: JSON.stringify(item.itemName),
-          quantity: item.quantity,
-          price: item.price,
-          status: "pending",
-          orderId: order.id,
-          numericOrderId: numericOrderId, // Add the numeric order ID
-        })),
-      })
+     
 
       return {
         message: existingOrder ? "Order updated" : "New order created",
