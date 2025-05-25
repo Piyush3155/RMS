@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
-import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft, Coffee, Utensils, Clock, Check, Search, Filter, Leaf, Drumstick, Heart, Star, Info, AlertCircle,  Sparkles, ArrowUpDown,  Receipt, Wallet, ChevronRight, CircleCheck, CircleDashed, CircleDot, Calendar, ArrowRight } from 'lucide-react'
+import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft, Coffee, Utensils, Clock, Check, Search, Filter, Leaf, Drumstick, Heart, Star, Info, AlertCircle,  Sparkles, ArrowUpDown,  Receipt, Wallet, ChevronRight, Calendar, ArrowRight } from 'lucide-react'
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
@@ -512,24 +512,10 @@ export default function Menu() {
 
   const getOverallTotal = () => {
     const cartTotal = getCartTotal() * 1.05 // Including 5% GST
-    return cartTotal + recentOrdersTotal
+    return cartTotal + recentOrdersTotal + (recentOrdersTotal * 0.05)
   }
 
-  const getStatusIcon = (status: string) => {
-    const statusLower = status.toLowerCase()
-    if (statusLower === "completed") return <CircleCheck className="text-emerald-600" size={16} />
-    if (statusLower === "pending") return <CircleDashed className="text-amber-600" size={16} />
-    if (statusLower === "processing") return <CircleDot className="text-sky-600" size={16} />
-    return <AlertCircle className="text-gray-600" size={16} />
-  }
 
-  const getStatusColor = (status: string) => {
-    const statusLower = status.toLowerCase()
-    if (statusLower === "completed") return "bg-emerald-100 text-emerald-800"
-    if (statusLower === "pending") return "bg-amber-100 text-amber-800"
-    if (statusLower === "processing") return "bg-sky-100 text-sky-800"
-    return "bg-gray-100 text-gray-800"
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -1109,14 +1095,7 @@ export default function Menu() {
                                 </div>
                               </div>
                             </div>
-                            <div
-                              className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(
-                                order.status,
-                              )}`}
-                            >
-                              {getStatusIcon(order.status)}
-                              <span>{order.status}</span>
-                            </div>
+                            
                           </div>
 
                           <div className="flex justify-between items-center mt-3">
@@ -1156,7 +1135,7 @@ export default function Menu() {
                                     <span className="text-gray-600">
                                       {item.quantity}× {item.name}
                                     </span>
-                                    <span className="text-gray-800 font-medium">₹{item.price.toFixed(2)}</span>
+                                    <span className="text-gray-800 font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
                                   </li>
                                 ))}
                               </ul>
