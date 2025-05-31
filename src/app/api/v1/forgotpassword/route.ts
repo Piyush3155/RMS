@@ -23,8 +23,23 @@ export async function POST(request: Request) {
 
     await sendMail({
       to: user.email,
-      subject: "Your Password from Bites & Co",
-      text: `Hello ${user.name},\n\nYour password is: ${user.password}\n\nPlease keep it safe.`,
+      subject: "Your Password from Team Piyush Gurav",
+      text: `Hello ${user.name},
+
+Welcome aboard! 🎉
+
+We’re excited to have you as part of the BITE & CO team.
+
+Your login credentials have been assigned by the developer:
+
+🔒 Password: ${user.password}
+
+Please remember this password and keep it stored securely. If you ever need to change it, please contact the developer directly.
+
+If you need any assistance, feel free to reach out.
+
+Best regards,  
+Team Piyush Gurav`,
     })
 
     return NextResponse.json({ success: true, message: "Password has been sent to your email address" })

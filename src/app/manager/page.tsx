@@ -1015,7 +1015,7 @@ export default function AdminDashboard() {
 
   const renderMenu = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
             <Plus className="text-amber-500" size={24} />
@@ -1131,7 +1131,8 @@ export default function AdminDashboard() {
           </form>
         </div>
 
-        <div className="md:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+       <div className="md:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm h-[580px] overflow-y-scroll">
+  
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
               <Menu className="text-amber-500" size={24} />

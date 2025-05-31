@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
-import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft, Coffee, Utensils, Clock, Check, Search, Filter, Leaf, Drumstick, Heart, Star, Info, AlertCircle,  Sparkles, ArrowUpDown,  Receipt, Wallet, ChevronRight, Calendar, ArrowRight } from 'lucide-react'
+import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft,  Utensils, Clock, Check, Search, Filter, Leaf, Drumstick, Heart, Star, Info, AlertCircle, Sparkles, ArrowUpDown, Receipt, Wallet, ChevronRight, Calendar, ArrowRight } from 'lucide-react'
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
@@ -320,7 +320,7 @@ export default function Menu() {
   // UI Helper functions
   const getCategoryIcon = (category: string) => {
     const lowerCategory = category.toLowerCase()
-    if (lowerCategory.includes("drink")) return <Coffee size={18} />
+    if (lowerCategory.includes("drink")) 
     if (lowerCategory.includes("veg") && !lowerCategory.includes("non"))
       return <Leaf size={18} className="text-emerald-600" />
     if (lowerCategory.includes("non-veg") || lowerCategory.includes("nonveg"))
@@ -535,7 +535,7 @@ export default function Menu() {
           <div className="flex items-center gap-3">
            
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-md overflow-hidden">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg shadow-md overflow-hidden">
                 <Image
                   src="/biteandco.png?height=80&width=80"
                   alt="logo"
@@ -699,11 +699,11 @@ export default function Menu() {
         </div>
 
         {/* Diet filter quick buttons - Modern style */}
-        <div className="flex gap-3 mt-4 mb-6 overflow-x-auto pb-2">
+<div className="flex gap-3 mt-4 mb-6 overflow-x-auto pb-2">
           <button
             onClick={() => setDietFilter("all")}
             className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm",
+              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
               dietFilter === "all"
                 ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white"
                 : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50",
@@ -717,7 +717,7 @@ export default function Menu() {
           <button
             onClick={() => setDietFilter("veg")}
             className={cn(
-              "px-6 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm",
+              "px-2 py-1 md:px-6 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
               dietFilter === "veg"
                 ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
                 : "bg-white border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50",
@@ -727,13 +727,14 @@ export default function Menu() {
             <div className="w-4 h-4 border-2 border-current flex items-center justify-center rounded-sm bg-white">
               <div className={`w-2 h-2 ${dietFilter === "veg" ? "bg-white" : "bg-emerald-600"} rounded-full`}></div>
             </div>
-            <h1 className="text-sm">Veg Only</h1>
+            {/* Added whitespace-nowrap to the h1 for extra safety, though on the button should suffice */}
+            <h1 className="text-sm md:sm whitespace-nowrap">Veg Only</h1>
           </button>
 
           <button
             onClick={() => setDietFilter("non-veg")}
             className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm",
+              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
               dietFilter === "non-veg"
                 ? "bg-gradient-to-r from-rose-500 to-rose-600 text-white"
                 : "bg-white border-2 border-rose-500 text-rose-700 hover:bg-rose-50",
@@ -746,23 +747,28 @@ export default function Menu() {
             Non-Veg
           </button>
 
-  
-
           <button
-            onClick={() => setSortOrder(sortOrder === "priceLow" ? "priceHigh" : "priceLow")}
-            className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm",
-              sortOrder === "priceLow" || sortOrder === "priceHigh"
-                ? "bg-gradient-to-r from-sky-500 to-sky-600 text-white"
-                : "bg-white border border-sky-500 text-sky-700 hover:bg-sky-50",
-            )}
-            aria-label="Sort by price"
-          >
-            <ArrowUpDown size={16} />
-            Price {sortOrder === "priceLow" ? "↑" : sortOrder === "priceHigh" ? "↓" : ""}
-          </button>
+              onClick={() => {
+                if (sortOrder === "priceLow") {
+                  setSortOrder("priceHigh")
+                } else if (sortOrder === "priceHigh") {
+                  setSortOrder("default")
+                } else {
+                  setSortOrder("priceLow")
+                }
+              }}
+                className={cn(
+                  "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
+                  sortOrder === "priceLow" || sortOrder === "priceHigh"
+                    ? "bg-gradient-to-r from-sky-500 to-sky-600 text-white"
+                    : "bg-white border border-sky-500 text-sky-700 hover:bg-sky-50",
+                )}
+                aria-label="Sort by price"
+              >
+                <ArrowUpDown size={16} />
+                {sortOrder === "priceLow" ? "Price: Low to High" : sortOrder === "priceHigh" ? "Price: High to Low" : "Sort by Price"}
+              </button>
         </div>
-
         {/* Filter Dropdown */}
         <AnimatePresence>
           {showFilterDropdown && (

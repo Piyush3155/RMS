@@ -9,8 +9,9 @@ export async function POST(request: Request) {
     if (!to || !to.includes("@")) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 })
     }
-
+    
     // Create a transporter using the provided email credentials
+    console.log("email has been sent",to);
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     const emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 20px;">
-          <img src="/biteandco.png" alt="Restaurant Logo" style="width: 150px; height: auto;" />
+         <h1 style="color: #f59e0b; font-size: 24px; margin: 0;">BITE & CO</h1>
           <div style="color: #666; font-size: 14px;">
             <p>Contact: +91 9874563210</p>
             <p>Address: Belgavi</p>
