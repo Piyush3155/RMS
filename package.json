@@ -30,6 +30,7 @@
     "cookies": "^0.9.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
+    "express": "^5.1.0",
     "formidable": "^3.5.2",
     "framer-motion": "^12.4.2",
     "i18next": "^24.2.2",

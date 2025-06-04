@@ -2,10 +2,33 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
-import { MinusCircle, PlusCircle, ShoppingBag, X, ChevronLeft,  Utensils, Clock, Check, Search, Filter, Leaf, Drumstick, Heart, Star, Info, AlertCircle, Sparkles, ArrowUpDown, Receipt, Wallet, ChevronRight, Calendar, ArrowRight } from 'lucide-react'
+import {
+  MinusCircle,
+  PlusCircle,
+  ShoppingBag,
+  X,
+  ChevronLeft,
+  Utensils,
+  Clock,
+  Check,
+  Search,
+  Filter,
+  Leaf,
+  Drumstick,
+  Heart,
+  Star,
+  Info,
+  AlertCircle,
+  Sparkles,
+  ArrowUpDown,
+  Receipt,
+  Wallet,
+  ChevronRight,
+  Calendar,
+  ArrowRight,
+} from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
-
 import { motion, AnimatePresence } from "framer-motion"
 
 // Types
@@ -59,7 +82,6 @@ const SORT_OPTIONS = {
   default: { label: "Default", fn: () => 0 },
   priceLow: { label: "Price: Low to High", fn: (a: MenuItem, b: MenuItem) => a.price - b.price },
   priceHigh: { label: "Price: High to Low", fn: (a: MenuItem, b: MenuItem) => b.price - a.price },
- 
 }
 
 const DIET_FILTERS = {
@@ -106,7 +128,7 @@ export default function Menu() {
   const [specialInstructions, setSpecialInstructions] = useState<Record<number, string>>({})
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [estimatedTime, setEstimatedTime] = useState<number>(25)
-  const [showMobileNav, setShowMobileNav] = useState(false)
+  const [] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState("")
   const [recentOrders, setRecentOrders] = useState<CustomerOrder[]>([])
@@ -114,11 +136,21 @@ export default function Menu() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(true)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null)
+  const [, setIsSecureAccess] = useState(false)
 
   // Effects
   useEffect(() => {
     const table = searchParams.get("table")
-    if (table) window.localStorage.setItem("tableNumber", table)
+    if (table) {
+      window.localStorage.setItem("tableNumber", table)
+      setIsSecureAccess(false) // Direct access
+    } else {
+      // Check if this is coming from a secure redirect
+      const currentPath = window.location.pathname
+      if (currentPath === "/orders") {
+        setIsSecureAccess(true) // Secure access
+      }
+    }
 
     // Load favorites from localStorage
     const savedFavorites = localStorage.getItem("favorites")
@@ -281,7 +313,7 @@ export default function Menu() {
   const getCartItemCount = () => cart.reduce((count, item) => count + item.quantity, 0)
 
   const placeOrder = async () => {
-    const tableNo = window.localStorage.getItem("tableNumber") 
+    const tableNo = window.localStorage.getItem("tableNumber")
     const orderItems = cart.map((item) => ({
       itemName: item.itemName,
       quantity: item.quantity,
@@ -320,12 +352,11 @@ export default function Menu() {
   // UI Helper functions
   const getCategoryIcon = (category: string) => {
     const lowerCategory = category.toLowerCase()
-    if (lowerCategory.includes("drink")) 
     if (lowerCategory.includes("veg") && !lowerCategory.includes("non"))
       return <Leaf size={18} className="text-emerald-600" />
     if (lowerCategory.includes("non-veg") || lowerCategory.includes("nonveg"))
       return <Drumstick size={18} className="text-rose-600" />
-    
+    return null
   }
 
   const renderVegIndicator = (item: MenuItem & { normalizedCategory: string }) => {
@@ -376,7 +407,7 @@ export default function Menu() {
             />
           </button>
         </div>
-        
+
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent h-16"></div>
       </div>
       <div className="p-4 flex-1 flex flex-col">
@@ -432,7 +463,6 @@ export default function Menu() {
           height={200}
           className="w-full h-full object-cover"
         />
-       
       </div>
       <div className="p-3 flex-1 flex flex-col">
         <div className="flex justify-between">
@@ -512,10 +542,8 @@ export default function Menu() {
 
   const getOverallTotal = () => {
     const cartTotal = getCartTotal() * 1.05 // Including 5% GST
-    return cartTotal + recentOrdersTotal + (recentOrdersTotal * 0.05)
+    return cartTotal + recentOrdersTotal + recentOrdersTotal * 0.05
   }
-
-
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -533,7 +561,6 @@ export default function Menu() {
       <header className="bg-white z-50 text-gray-800 p-3 sticky top-0 shadow-md backdrop-blur-sm bg-white/90">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
-           
             <div className="flex items-center">
               <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg shadow-md overflow-hidden">
                 <Image
@@ -545,17 +572,20 @@ export default function Menu() {
                 />
               </div>
               <div className="ml-2">
-                <h1 className="font-bold text-gray-800">Bites & Co</h1>
+                <h1 className="font-bold text-gray-800 flex items-center gap-2">
+                  Bites & Co
+                 
+                </h1>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <span>Table {window.localStorage.getItem("tableNumber")}</span>
                   <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
                   <span>Dine-in</span>
+                  
                 </div>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            
             <button
               onClick={() => setShowCart(!showCart)}
               className="relative p-2 bg-amber-50 hover:bg-amber-100 rounded-full transition-colors"
@@ -571,52 +601,6 @@ export default function Menu() {
           </div>
         </div>
       </header>
-
-      {/* Mobile Navigation Sidebar */}
-      <AnimatePresence>
-        {showMobileNav && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowMobileNav(false)}
-          >
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25 }}
-              className="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-4 rounded-r-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
-                    <Image
-                      src="/placeholder.svg?height=80&width=80"
-                      alt="logo"
-                      width={80}
-                      height={80}
-                      className="rounded-full"
-                    />
-                  </div>
-                  <h2 className="ml-2 font-bold">Bites & Co</h2>
-                </div>
-                <button
-                  onClick={() => setShowMobileNav(false)}
-                  className="p-1 rounded-full hover:bg-gray-100"
-                  aria-label="Close menu"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <main className="container mx-auto p-4 md:p-6">
         {/* Search and Filter */}
@@ -698,12 +682,12 @@ export default function Menu() {
           </div>
         </div>
 
-        {/* Diet filter quick buttons - Modern style */}
-<div className="flex gap-3 mt-4 mb-6 overflow-x-auto pb-2">
+        {/* Diet filter quick buttons */}
+        <div className="flex gap-3 mt-4 mb-6 overflow-x-auto pb-2">
           <button
             onClick={() => setDietFilter("all")}
             className={cn(
-              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
+              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap",
               dietFilter === "all"
                 ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white"
                 : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50",
@@ -717,7 +701,7 @@ export default function Menu() {
           <button
             onClick={() => setDietFilter("veg")}
             className={cn(
-              "px-2 py-1 md:px-6 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
+              "px-2 py-1 md:px-6 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap",
               dietFilter === "veg"
                 ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
                 : "bg-white border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50",
@@ -727,14 +711,13 @@ export default function Menu() {
             <div className="w-4 h-4 border-2 border-current flex items-center justify-center rounded-sm bg-white">
               <div className={`w-2 h-2 ${dietFilter === "veg" ? "bg-white" : "bg-emerald-600"} rounded-full`}></div>
             </div>
-            {/* Added whitespace-nowrap to the h1 for extra safety, though on the button should suffice */}
             <h1 className="text-sm md:sm whitespace-nowrap">Veg Only</h1>
           </button>
 
           <button
             onClick={() => setDietFilter("non-veg")}
             className={cn(
-              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
+              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap",
               dietFilter === "non-veg"
                 ? "bg-gradient-to-r from-rose-500 to-rose-600 text-white"
                 : "bg-white border-2 border-rose-500 text-rose-700 hover:bg-rose-50",
@@ -748,27 +731,32 @@ export default function Menu() {
           </button>
 
           <button
-              onClick={() => {
-                if (sortOrder === "priceLow") {
-                  setSortOrder("priceHigh")
-                } else if (sortOrder === "priceHigh") {
-                  setSortOrder("default")
-                } else {
-                  setSortOrder("priceLow")
-                }
-              }}
-                className={cn(
-                  "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap", // Added whitespace-nowrap
-                  sortOrder === "priceLow" || sortOrder === "priceHigh"
-                    ? "bg-gradient-to-r from-sky-500 to-sky-600 text-white"
-                    : "bg-white border border-sky-500 text-sky-700 hover:bg-sky-50",
-                )}
-                aria-label="Sort by price"
-              >
-                <ArrowUpDown size={16} />
-                {sortOrder === "priceLow" ? "Price: Low to High" : sortOrder === "priceHigh" ? "Price: High to Low" : "Sort by Price"}
-              </button>
+            onClick={() => {
+              if (sortOrder === "priceLow") {
+                setSortOrder("priceHigh")
+              } else if (sortOrder === "priceHigh") {
+                setSortOrder("default")
+              } else {
+                setSortOrder("priceLow")
+              }
+            }}
+            className={cn(
+              "px-2 py-1 md:px-4 md:py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-all shadow-sm whitespace-nowrap",
+              sortOrder === "priceLow" || sortOrder === "priceHigh"
+                ? "bg-gradient-to-r from-sky-500 to-sky-600 text-white"
+                : "bg-white border border-sky-500 text-sky-700 hover:bg-sky-50",
+            )}
+            aria-label="Sort by price"
+          >
+            <ArrowUpDown size={16} />
+            {sortOrder === "priceLow"
+              ? "Price: Low to High"
+              : sortOrder === "priceHigh"
+                ? "Price: High to Low"
+                : "Sort by Price"}
+          </button>
         </div>
+
         {/* Filter Dropdown */}
         <AnimatePresence>
           {showFilterDropdown && (
@@ -1101,7 +1089,6 @@ export default function Menu() {
                                 </div>
                               </div>
                             </div>
-                            
                           </div>
 
                           <div className="flex justify-between items-center mt-3">
@@ -1141,7 +1128,9 @@ export default function Menu() {
                                     <span className="text-gray-600">
                                       {item.quantity}× {item.name}
                                     </span>
-                                    <span className="text-gray-800 font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
+                                    <span className="text-gray-800 font-medium">
+                                      ₹{(item.price * item.quantity).toFixed(2)}
+                                    </span>
                                   </li>
                                 ))}
                               </ul>
@@ -1178,8 +1167,10 @@ export default function Menu() {
                         <Wallet size={18} className="text-amber-600" />
                         <span className="font-medium text-amber-800">Overall Spending</span>
                       </div>
-                      
-                      <div className="font-bold text-amber-700 text-lg">₹{(recentOrdersTotal + recentOrdersTotal * 0.05).toFixed(2)}</div>
+
+                      <div className="font-bold text-amber-700 text-lg">
+                        ₹{(recentOrdersTotal + recentOrdersTotal * 0.05).toFixed(2)}
+                      </div>
                     </div>
                   </div>
                 </div>
