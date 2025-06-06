@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍽️ Restaurant Management System (RMS)
 
-## Getting Started
+A full-stack Restaurant Management System built with **Next.js**, **TypeScript**, **Prisma**, and **MySQL** to streamline restaurant operations from order placement to kitchen tracking and sales management.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- 📖 **Menu Browsing**
+  - Filter by **Veg/Non-Veg**
+  - Includes food **images** and descriptions
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 🛒 **Cart System**
+  - Quantity management
+  - Table-based ordering via **QR codes**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 🔐 **Secure QR Ordering**
+  - **Hashed URL encryption** for secure table-specific access
 
-## Learn More
+- 🧾 **Email Billing**
+  - Automatic **bill receipts sent to customers' emails**
 
-To learn more about Next.js, take a look at the following resources:
+- 🧑‍🍳 **Kitchen Dashboard**
+  - Live order tracking
+  - Complete orders with one click
+  - Sound notification for new orders
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- 📊 **Admin Dashboard**
+  - Manage live & completed orders
+  - View **sales insights**, top-selling items, and total revenue
+  - Product & pricing control
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🛠️ Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS
+- **Backend:** Prisma ORM + MySQL
+- **Database:** Hosted on TiDB Cloud
+- **Email Service:** Nodemailer (or similar SMTP)
+- **Design:** Clean UI with soft amber/nude tones and food-themed aesthetics
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🔐 Security Features
+
+- QR code URLs are encrypted using **secure hash algorithms**
+- Admin and kitchen routes are **role-protected**
+- Customer data is **not stored without consent**
+
+---
+
+
+## 🔗 Links
+
+- 🔍 [Live Demo](https://biteandco25.vercel.app/)
+- 📝 [LinkedIn Post](https://www.linkedin.com/in/piyush-gurav-674409262/)
+
+---
+
+## 📬 Contact
+
+Made with ❤️ by **Piyush Gurav**  
+📧 piyushgurav176@gmail.com  
+🌐 [LinkedIn](https://www.linkedin.com/in/piyush-gurav-674409262/) 
+
+---
+
+## 📌 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
