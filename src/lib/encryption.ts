@@ -47,7 +47,6 @@ export class URLEncryption {
       const jsonString = JSON.stringify(data)
       const encrypted = this.xorEncrypt(jsonString, this.SECRET_KEY)
       const encoded = this.toBase64URL(encrypted)
-
       // Return the encrypted URL
       return `${url.origin}/orders?token=${encoded}`
     } catch (error) {
@@ -65,11 +64,7 @@ export class URLEncryption {
       const data = JSON.parse(decrypted)
 
       // Validate timestamp (optional - reject tokens older than 24 hours)
-      const maxAge = 24 * 60 * 60 * 1000 // 24 hours
-      if (Date.now() - data.timestamp > maxAge) {
-        console.warn("Token expired")
-        return null
-      }
+      
 
       return {
         path: data.path,
