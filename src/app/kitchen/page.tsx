@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"  // Import useSearchParams
+import { useSearchParams } from "next/navigation"
 import { toast } from "react-toastify"
-import { ChefHat, Trash2, Loader2, Clock, CheckCircle, AlertCircle, MoreHorizontal } from "lucide-react"
+import { ChefHat, Trash2, Loader2, Clock, CheckCircle, AlertCircle, MoreHorizontal, Utensils, LogOut } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
+import { Suspense } from "react"
 
-type OrderStatus = "received" | "preparing" | "completed" | "pending"
+type OrderStatus = "received" | "preparing" | "completed" | "pending" | "served"
 
 interface OrderItem {
   id: string
@@ -46,19 +47,18 @@ const updateOrderStatusAPI = async (orderId: string, newStatus: OrderStatus) => 
   return res.json()
 }
 
-import { Suspense } from "react"
-
 function KitchenPageContent() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<OrderStatus | "all">("all")
   const [currentDate, setCurrentDate] = useState<string>("")
-  const searchParams = useSearchParams()  // Hook to get query params
+
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    const error = searchParams.get("error") // Get the 'error' query param
+    const error = searchParams.get("error")
     if (error === "access-denied") {
-      toast.error("You don't have access to this page")  // Show error toast
+      toast.error("You don't have access to this page")
     }
 
     setCurrentDate(
@@ -89,7 +89,12 @@ function KitchenPageContent() {
       setOrders((prevOrders) =>
         prevOrders.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)),
       )
-      toast.success(`Order marked as ${newStatus}`)
+      
+      if (newStatus === "served") {
+        toast.success("Order marked as served")
+      } else {
+        toast.success(`Order marked as ${newStatus}`)
+      }
     } catch (error) {
       console.error(error)
       toast.error("Failed to update order status")
@@ -105,6 +110,24 @@ function KitchenPageContent() {
       toast.error("Failed to delete order")
     }
   }
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/v1/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (res.ok) {
+        window.location.href = "/login";
+      } else {
+        toast.error("Failed to logout");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to logout");
+    }
+  };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -137,6 +160,12 @@ function KitchenPageContent() {
             Completed
           </Badge>
         )
+      case "served":
+        return (
+          <Badge variant="outline" className="bg-yellow-100 text-yellow-700">
+            Served
+          </Badge>
+        )
     }
   }
 
@@ -154,7 +183,18 @@ function KitchenPageContent() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Image src="/biteandco.png" alt="Logo" width={50} height={50} className="w-20 h-20"/>
           </h1>
-          <div className="text-sm text-muted-foreground">{currentDate}</div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">{currentDate}</div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Tabs
@@ -162,7 +202,7 @@ function KitchenPageContent() {
           value={activeTab}
           onValueChange={(value: string) => setActiveTab(value as OrderStatus | "all")}
         >
-          <TabsList className="grid grid-cols-4 mb-8 shadow-lg rounded-lg bg-white border border-slate-200">
+          <TabsList className="grid grid-cols-5 mb-8 shadow-lg rounded-lg bg-white border border-slate-200">
             <TabsTrigger value="all">All ({getOrderCount("all")})</TabsTrigger>
             <TabsTrigger value="pending">
               <Clock className="w-4 h-4 mr-2" /> New ({getOrderCount("pending")})
@@ -172,6 +212,9 @@ function KitchenPageContent() {
             </TabsTrigger>
             <TabsTrigger value="completed">
               <CheckCircle className="w-4 h-4 mr-2" /> Completed ({getOrderCount("completed")})
+            </TabsTrigger>
+            <TabsTrigger value="served">
+              <Utensils className="w-4 h-4 mr-2" /> Served ({getOrderCount("served")})
             </TabsTrigger>
           </TabsList>
 
@@ -202,6 +245,7 @@ function KitchenPageContent() {
                     ${order.status === "received" ? "border-l-4 border-l-amber-400" : ""}
                     ${order.status === "preparing" ? "border-l-4 border-l-orange-400" : ""}
                     ${order.status === "completed" ? "border-l-4 border-l-green-400" : ""}
+                    ${order.status === "served" ? "border-l-4 border-l-yellow-400" : ""}
                   `}
                   >
                     <CardHeader className="pb-2">
@@ -213,6 +257,7 @@ function KitchenPageContent() {
                         {getStatusBadge(order.status)}
                       </div>
                     </CardHeader>
+
                     <CardContent>
                       <Table>
                         <TableHeader>
@@ -257,7 +302,22 @@ function KitchenPageContent() {
                               <CheckCircle className="w-4 h-4 mr-1" /> Mark Complete
                             </Button>
                           )}
+                          {order.status === "completed" && (
+                            <Button
+                              onClick={() => handleUpdateStatus(order.id, "served")}
+                              className="flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700"
+                              variant="default"
+                            >
+                              <Utensils className="w-4 h-4 mr-1" /> Mark as Served
+                            </Button>
+                          )}
+                          {order.status === "served" && (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                              Served
+                            </Badge>
+                          )}
                         </div>
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -293,4 +353,3 @@ export default function KitchenPage() {
     </Suspense>
   )
 }
-

@@ -130,40 +130,7 @@ export default function AdminDashboard() {
   const [menuSearchQuery, setMenuSearchQuery] = useState("")
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      title: "New Order",
-      message: "Order #1234 has been placed",
-      time: "5 min ago",
-      read: false,
-      type: "order",
-    },
-    {
-      id: 2,
-      title: "Low Stock Alert",
-      message: "Butter Chicken is running low on stock",
-      time: "1 hour ago",
-      read: false,
-      type: "alert",
-    },
-    {
-      id: 3,
-      title: "Payment Received",
-      message: "Payment of ₹1,250 received for Order #1230",
-      time: "3 hours ago",
-      read: true,
-      type: "info",
-    },
-    {
-      id: 4,
-      title: "New Review",
-      message: "A customer left a 5-star review",
-      time: "Yesterday",
-      read: true,
-      type: "info",
-    },
-  ])
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [salesAnalytics, setSalesAnalytics] = useState<SalesAnalytics | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortField, setSortField] = useState<string>("createdAt")
