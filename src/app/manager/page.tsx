@@ -1292,7 +1292,7 @@ export default function AdminDashboard() {
           {open && (
             <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg border rounded-xl z-10">
               <Link
-                href="/reports/monthly"
+                href="manager/reports"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 rounded-t-xl text-end"
               >
                 Monthly Reports
