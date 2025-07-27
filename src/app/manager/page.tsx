@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import EditMenuModal from "@/components/editemenu/page"
 import QRCodeGenerator from "../QR/page"
+import Link from "next/link"
 
 interface MenuItem {
   id: number
@@ -141,7 +142,7 @@ export default function AdminDashboard() {
   const [emailError, setEmailError] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [tableStatus, setTableStatus] = useState<{ [key: number]: boolean }>({})
-
+  const [open, setOpen] = useState(false)
   const notificationRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
@@ -1264,19 +1265,64 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <BarChartIcon className="text-amber-500" size={24} />
-              Sales Overview
-            </h2>
-            <button
-              onClick={fetchSalesAnalytics}
-              className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
-            >
-              <RefreshCw size={16} className={isSalesLoading ? "animate-spin" : ""} />
-              {isSalesLoading ? "Loading..." : "Refresh"}
-            </button>
-          </div>
+          <div className="flex justify-between items-center mb-6 relative">
+      {/* Heading */}
+      <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <BarChartIcon className="text-amber-500" size={24} />
+        Sales Overview
+      </h2>
+
+      {/* Right-side Buttons */}
+      <div className="flex items-center gap-4 relative">
+        {/* Reports Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setOpen(!open)}
+            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+              activeTab === "reports" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <FileText size={18} />
+              <span className="font-medium">Reports</span>
+            </div>
+            <ChevronDown size={16} className={`${open ? "rotate-180" : ""} transition-transform`} />
+          </button>
+
+          {open && (
+            <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg border rounded-xl z-10">
+              <Link
+                href="/reports/monthly"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 rounded-t-xl text-end"
+              >
+                Monthly Reports
+              </Link>
+              <Link
+                href="/reports/staff"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 text-end"
+              >
+                Staff Reports
+              </Link>
+              <Link
+                href="/reports/inventory"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 rounded-b-xl text-end"
+              >
+                Inventory Reports
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Refresh Button */}
+        <button
+          onClick={fetchSalesAnalytics}
+          className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
+        >
+          <RefreshCw size={16} className={isSalesLoading ? "animate-spin" : ""} />
+          {isSalesLoading ? "Loading..." : "Refresh"}
+        </button>
+      </div>
+    </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Today's Sales */}
@@ -1556,6 +1602,8 @@ export default function AdminDashboard() {
                   <User size={18} />
                   <span className="font-medium">Staff Dashboard</span>
                 </button>
+
+                
             {/* Kitchen dashboard is now integrated as a tab */}
           </div>
         </div>
