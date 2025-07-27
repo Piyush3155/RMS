@@ -352,6 +352,7 @@ export default function AdminDashboard() {
     }
   }
 
+  
   async function handleSaveEditedItem(updatedItem: Partial<MenuItem>) {
     if (!itemToEdit) return
 
@@ -434,7 +435,7 @@ export default function AdminDashboard() {
         const topItemsData = await topItemsRes.json()
         data.topSellingItems = topItemsData.items
       }
-
+      
       setSalesAnalytics(data)
     } catch (error) {
       console.error("Error fetching sales analytics:", error)
