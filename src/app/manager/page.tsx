@@ -1547,6 +1547,15 @@ export default function AdminDashboard() {
               <span className="font-medium">Kitchen Dashboard</span>
             </button>
 
+               <button
+                  onClick={() => router.push("/staff")}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                    activeTab === "staff" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <User size={18} />
+                  <span className="font-medium">Staff Dashboard</span>
+                </button>
             {/* Kitchen dashboard is now integrated as a tab */}
           </div>
         </div>
