@@ -81,6 +81,7 @@ export default function StaffManagementPage() {
         description: "Failed to fetch staff data",
         variant: "destructive",
       })
+      console.log(error)
     } finally {
       setLoading(false)
     }
@@ -201,6 +202,7 @@ export default function StaffManagementPage() {
         description: "Failed to update staff member",
         variant: "destructive",
       })
+      console.log(error)
     }
   }
 
@@ -226,6 +228,7 @@ export default function StaffManagementPage() {
         description: "Failed to delete staff member",
         variant: "destructive",
       })
+      console.log(error)
     }
   }
 
@@ -259,6 +262,7 @@ export default function StaffManagementPage() {
         description: "Failed to check in",
         variant: "destructive",
       })
+      console.log(error)
     } finally {
       setCheckInLoading(null)
     }
@@ -294,6 +298,7 @@ export default function StaffManagementPage() {
         description: "Failed to check out",
         variant: "destructive",
       })
+      console.log(error)
     } finally {
       setCheckInLoading(null)
     }
