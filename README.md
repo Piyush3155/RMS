@@ -54,7 +54,7 @@ A full-stack Restaurant Management System built with **Next.js**, **TypeScript**
 ## 🔗 Links
 
 - 🔍 [Live Demo](https://biteandco25.vercel.app/)
-- 📝 [LinkedIn Post](https://www.linkedin.com/in/piyush-gurav-674409262/)
+- 📝 [LinkedIn Post]([https://www.linkedin.com/in/piyush-gurav-674409262/](https://www.linkedin.com/posts/piyush-gurav-674409262_thrilled-to-showcase-my-latest-full-stack-activity-7337385483095691264-WmOs?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEB9EHgBa6fa8jG_6HLnW0r-AzSLERSVESc))
 
 ---
 
