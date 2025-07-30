@@ -2,12 +2,13 @@ import { prisma } from "@/lib/prisma"
 import { format } from "date-fns"
 
 type Props = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function AttendancePage({ params }: Props) {
+  const { id } = await params
   const staff = await prisma.staff.findUnique({
-    where: { id: parseInt(params.id) },
+    where: { id: parseInt(id) },
     include: { attendance: { orderBy: { date: "desc" } } },
   })
 

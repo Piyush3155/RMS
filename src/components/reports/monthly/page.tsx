@@ -4,7 +4,14 @@ import { useEffect, useState } from "react"
 import { Download } from "lucide-react"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
+
+// Extend jsPDF type to include autoTable
+declare module "jspdf" {
+  interface jsPDF {
+    autoTable: typeof autoTable;
+  }
+}
 
 type OrderAnalytics = {
   id: number
@@ -50,7 +57,7 @@ export default function MonthlyReports() {
       item.topItemCount,
       new Date(item.createdAt).toLocaleDateString(),
     ])
-    doc.autoTable({
+    autoTable(doc, {
       head: [["Item Name", "Total Amount", "Items Sold", "Top Item Count", "Date"]],
       body: tableData,
       startY: 20,
