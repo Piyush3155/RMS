@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma"
 const allowedStatuses = ["pending", "preparing", "completed", "served"]
 
 // PUT /api/v1/kitchenorders/[id]
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
-  const { id: orderId } = context.params
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id: orderId } = await context.params
 
   if (!orderId) {
     return NextResponse.json({ error: "Order ID is required" }, { status: 400 })
@@ -62,8 +62,8 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
 }
 
 // DELETE /api/v1/kitchenorders/[id]
-export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
-  const { id: orderId } = context.params
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id: orderId } = await context.params
 
   if (!orderId) {
     return NextResponse.json({ error: "Order ID is required" }, { status: 400 })
