@@ -2,6 +2,8 @@
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import KitchenDashboard from "@/components/kitchendashboard/page"
+import Inventory from "@/components/inventory/page"
+import StaffManagementPage from "@/components/staff/page"
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
@@ -1595,7 +1597,7 @@ export default function AdminDashboard() {
             </button>
 
                <button
-                  onClick={() => router.push("/staff")}
+                  onClick={() => setActiveTab("staff")}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
                     activeTab === "staff" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
                   }`}
@@ -1603,8 +1605,15 @@ export default function AdminDashboard() {
                   <User size={18} />
                   <span className="font-medium">Staff Dashboard</span>
                 </button>
-
-                
+                <button
+              onClick={() => setActiveTab("inventory")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "inventory" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <FileText size={18} />
+              <span className="font-medium">Inventory</span>
+            </button>
             {/* Kitchen dashboard is now integrated as a tab */}
           </div>
         </div>
@@ -1695,7 +1704,24 @@ export default function AdminDashboard() {
             <CookingPot size={18} className="mx-auto mb-1" />
             <span className="text-xs">Kitchen</span>
           </button>
-          {/* Kitchen dashboard is now integrated as a tab */}
+          <button
+            onClick={() => setActiveTab("inventory")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "inventory" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <FileText size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Inventory</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("staff")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "staff" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <User size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Staff</span>
+          </button>
         </div>
       </div>
 
@@ -1711,8 +1737,10 @@ export default function AdminDashboard() {
               {activeTab === "tables" && "Tables Management"}
               {activeTab === "qrcodes" && "QR Code Management"}
               {activeTab === "kitchen" && "Kitchen Dashboard"}
+              {activeTab === "inventory" && "Inventory Management"}
+              {activeTab === "staff" && "Staff Management"}
             </h2>
-          </div>
+                   </div>
 
           <div className="flex items-center gap-6">
             <div className="relative">
@@ -1843,6 +1871,8 @@ export default function AdminDashboard() {
         {activeTab === "tables" && renderTableManagement()}
         {activeTab === "qrcodes" && <QRCodeGenerator />}
         {activeTab === "kitchen" && <KitchenDashboard />}
+        {activeTab === "inventory" && <Inventory />}
+        {activeTab === "staff" && <StaffManagementPage />}
       </main>
       {editModalOpen && (
         <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />

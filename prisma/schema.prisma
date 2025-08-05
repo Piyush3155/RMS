@@ -54,6 +54,7 @@ model Menu {
   category    String
   isVeg       Boolean  @default(true)
   createdAt   DateTime @default(now())
+  recipe      Recipe?
 }
 model order2 {
   id          Int      @id @default(autoincrement())
@@ -74,6 +75,108 @@ model orderanalytics {
   topItemCount   Int
   createdAt      DateTime @default(now())
   numericOrderId Int?     // Added to store the 6-digit order ID
+}
+
+model InventoryItem {
+  id           Int              @id @default(autoincrement())
+  name         String
+  category     String
+  unit         String           // e.g., kg, liter, piece
+  sku          String           @unique
+  quantity     Float            // Current stock
+  reorderLevel Float            // Alert threshold
+  maxCapacity  Float
+  variants     InventoryVariant[]
+  supplierId   Int?
+  supplier     Supplier?        @relation(fields: [supplierId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  stockInOut   StockInOut[]
+  wastages     Wastage[]
+  recipeItems  RecipeIngredient[]
+  purchaseOrderItems PurchaseOrderItem[]
+}
+
+model InventoryVariant {
+  id             Int           @id @default(autoincrement())
+  inventoryItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  inventoryItemId Int
+  size           String        // e.g., 1L, 5kg
+  quantity       Float         // Stock for this variant
+}
+
+model Supplier {
+  id          Int              @id @default(autoincrement())
+  name        String
+  contact     String
+  email       String?
+  phone       String?
+  items       InventoryItem[]
+  purchaseOrders PurchaseOrder[]
+  stockInOut  StockInOut[]     // Added to complete the relation with StockInOut
+}
+
+model StockInOut {
+  id             Int           @id @default(autoincrement())
+  inventoryItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  inventoryItemId Int
+  type           String        // "in" or "out"
+  quantity       Float
+  price          Float?        // For stock in (purchase)
+  date           DateTime      @default(now())
+  supplierId     Int?
+  supplier       Supplier?     @relation(fields: [supplierId], references: [id])
+  note           String?
+  orderId        Int?          // Link to order2 if stock out due to order
+}
+
+model Recipe {
+  id          Int              @id @default(autoincrement())
+  menuItemId  Int              @unique
+  menuItem    Menu             @relation(fields: [menuItemId], references: [id])
+  ingredients RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id             Int           @id @default(autoincrement())
+  recipe         Recipe        @relation(fields: [recipeId], references: [id])
+  recipeId       Int
+  inventoryItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  inventoryItemId Int
+  quantity       Float         // Quantity required per dish
+  unit           String
+}
+
+model Wastage {
+  id             Int           @id @default(autoincrement())
+  inventoryItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  inventoryItemId Int
+  quantity       Float
+  reason         String
+  date           DateTime      @default(now())
+  note           String?
+}
+
+model PurchaseOrder {
+  id             Int           @id @default(autoincrement())
+  supplier       Supplier      @relation(fields: [supplierId], references: [id])
+  supplierId     Int
+  status         String        // "pending", "delivered", "partial"
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id               Int           @id @default(autoincrement())
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrderId  Int
+  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  inventoryItemId  Int
+  quantity         Float
+  unit             String
+  price            Float
+  delivered        Boolean       @default(false)
 }
 
 
