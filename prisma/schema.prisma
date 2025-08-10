@@ -179,4 +179,11 @@ model PurchaseOrderItem {
   delivered        Boolean       @default(false)
 }
 
+model CustomerContact {
+  id        Int     @id @default(autoincrement())
+  contactNo String? @unique
+  email     String? @unique
+  createdAt DateTime @default(now())
+}
+
 

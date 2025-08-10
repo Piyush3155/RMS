@@ -59,6 +59,7 @@
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
+    "twilio": "^5.8.0",
     "ws": "^8.18.1",
     "xlsx": "^0.18.5"
   },

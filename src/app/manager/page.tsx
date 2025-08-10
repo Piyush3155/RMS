@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import KitchenDashboard from "@/components/kitchendashboard/page"
 import Inventory from "@/components/inventory/page"
 import StaffManagementPage from "@/components/staff/page"
+import MessagesPage from "@/components/messages/page"
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
@@ -140,8 +141,8 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [itemToEdit, setItemToEdit] = useState<MenuItem | null>(null)
-  const [customerEmail, setCustomerEmail] = useState("")
-  const [emailError, setEmailError] = useState("")
+  const [customerContact, setCustomerContact] = useState("")
+  const [contactError, setContactError] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [tableStatus, setTableStatus] = useState<{ [key: number]: boolean }>({})
   const [open, setOpen] = useState(false)
@@ -167,9 +168,12 @@ export default function AdminDashboard() {
     { name: "Gulab Jamun", sold: 65, revenue: 6500 },
   ]
 
-  const isValidEmail = (email: string) => {
+
+  const isValidContact = (contact: string) => {
+    // Accepts 10-digit phone numbers or valid emails
+    const phoneRegex = /^\d{10}$/
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
+    return phoneRegex.test(contact) || emailRegex.test(contact)
   }
 
   useEffect(() => {
@@ -640,12 +644,24 @@ export default function AdminDashboard() {
     printWindow.document.close()
 
     // Wait for content to load before printing
-    setTimeout(() => {
+    setTimeout(async () => {
       printWindow.print()
 
-      // If customer provided email, send the bill via email
-      if (customerEmail.trim() && isValidEmail(customerEmail)) {
-        sendBillByEmail(customerEmail, order, "", totalAmount)
+      // If customer provided contact, send/store the bill/contact
+      if (customerContact.trim() && isValidContact(customerContact)) {
+        // Store contact details in DB
+        await fetch("/api/v1/customercontact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contactNo: /^\d{10}$/.test(customerContact) ? customerContact : undefined,
+            email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerContact) ? customerContact : undefined,
+          }),
+        })
+        // If it's an email, send bill by email
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerContact)) {
+          sendBillByEmail(customerContact, order, "", totalAmount)
+        }
       }
 
       // Delete the order from the database after printing
@@ -701,7 +717,7 @@ export default function AdminDashboard() {
           ),
         )
         // Clear email field after successful send
-        setCustomerEmail("")
+        setCustomerContact("")
       } else {
         // Update notification to error
         setNotifications((prev) =>
@@ -927,38 +943,38 @@ export default function AdminDashboard() {
           <div className="mt-6 border-t border-gray-200 pt-4">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
               <div className="flex-1">
-                <label htmlFor="customer-email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Customer Email (Optional)
+                <label htmlFor="customer-contact" className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Email or Contact No (Optional)
                 </label>
                 <div className="relative">
                   <input
-                    id="customer-email"
-                    type="email"
-                    placeholder="customer@example.com"
-                    value={customerEmail}
+                    id="customer-contact"
+                    type="text"
+                    placeholder="customer@example.com or 9876543210"
+                    value={customerContact}
                     onChange={(e) => {
-                      setCustomerEmail(e.target.value)
-                      if (e.target.value && !isValidEmail(e.target.value)) {
-                        setEmailError("Please enter a valid email address")
+                      setCustomerContact(e.target.value)
+                      if (e.target.value && !isValidContact(e.target.value)) {
+                        setContactError("Please enter a valid email or 10-digit contact number")
                       } else {
-                        setEmailError("")
+                        setContactError("")
                       }
                     }}
                     className={`w-full p-3 border ${
-                      emailError
+                      contactError
                         ? "border-red-300 focus:ring-red-500 focus:border-red-500"
                         : "border-gray-300 focus:ring-amber-500 focus:border-amber-500"
                     } rounded-xl transition-all`}
                   />
-                  {emailError && <p className="mt-1 text-xs text-red-500">{emailError}</p>}
+                  {contactError && <p className="mt-1 text-xs text-red-500">{contactError}</p>}
                 </div>
               </div>
               <div className="flex gap-3 mt-4 md:mt-0">
                 <button
                   onClick={() => printBill(selectedOrder)}
-                  disabled={(customerEmail.trim() !== "" && !isValidEmail(customerEmail)) || isSendingEmail}
+                  disabled={(customerContact.trim() !== "" && !isValidContact(customerContact)) || isSendingEmail}
                   className={`bg-amber-500 text-white px-4 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-1 ${
-                    (customerEmail.trim() !== "" && !isValidEmail(customerEmail)) || isSendingEmail
+                    (customerContact.trim() !== "" && !isValidContact(customerContact)) || isSendingEmail
                       ? "opacity-70 cursor-not-allowed"
                       : ""
                   }`}
@@ -966,7 +982,7 @@ export default function AdminDashboard() {
                   <FileText size={16} />
                   {isSendingEmail
                     ? "Sending..."
-                    : customerEmail.trim() && isValidEmail(customerEmail)
+                    : customerContact.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerContact)
                       ? "Print & Email Bill"
                       : "Print Bill"}
                 </button>
@@ -1449,7 +1465,7 @@ export default function AdminDashboard() {
                   <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">Rank</th>
                   <th className="p-3 font-semibold text-gray-600">Item Name</th>
                   <th className="p-3 font-semibold text-gray-600">Quantity Sold</th>
-                  <th className="p-3 font-semibold text-gray-600 rounded-tr-xl">Revenue</th>
+                  <th className="p-3 font-semibold text-gray-600">Revenue</th>
                 </tr>
               </thead>
               <tbody>
@@ -1614,6 +1630,15 @@ export default function AdminDashboard() {
               <FileText size={18} />
               <span className="font-medium">Inventory</span>
             </button>
+            <button
+              onClick={() => setActiveTab("messages")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
+                activeTab === "messages" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <Bell size={18} />
+              <span className="font-medium">Messages</span>
+            </button>
             {/* Kitchen dashboard is now integrated as a tab */}
           </div>
         </div>
@@ -1722,6 +1747,15 @@ export default function AdminDashboard() {
             <User size={18} className="mx-auto mb-1" />
             <span className="text-xs">Staff</span>
           </button>
+          <button
+            onClick={() => setActiveTab("messages")}
+            className={`flex-1 py-3 text-center border-b-2 ${
+              activeTab === "messages" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
+            }`}
+          >
+            <Bell size={18} className="mx-auto mb-1" />
+            <span className="text-xs">Messages</span>
+          </button>
         </div>
       </div>
 
@@ -1739,6 +1773,7 @@ export default function AdminDashboard() {
               {activeTab === "kitchen" && "Kitchen Dashboard"}
               {activeTab === "inventory" && "Inventory Management"}
               {activeTab === "staff" && "Staff Management"}
+              {activeTab === "messages" && "Messages"}
             </h2>
                    </div>
 
@@ -1873,6 +1908,7 @@ export default function AdminDashboard() {
         {activeTab === "kitchen" && <KitchenDashboard />}
         {activeTab === "inventory" && <Inventory />}
         {activeTab === "staff" && <StaffManagementPage />}
+        {activeTab === "messages" && <MessagesPage />}
       </main>
       {editModalOpen && (
         <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />
