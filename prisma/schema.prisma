@@ -186,4 +186,24 @@ model CustomerContact {
   createdAt DateTime @default(now())
 }
 
+model RagDocument {
+  id         Int      @id @default(autoincrement())
+  content    String   // The text/content of the document
+  embedding  String   // Serialized embedding vector (e.g., JSON string)
+  source     String?  // Optional: source info (URL, filename, etc.)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  queries    RagQuery[]
+}
+
+model RagQuery {
+  id           Int      @id @default(autoincrement())
+  query        String   // The user's query
+  retrievedIds String   // Document IDs retrieved (e.g., comma-separated or JSON array)
+  response     String   // The generated response from the RAG model
+  createdAt    DateTime @default(now())
+  ragDocument  RagDocument? @relation(fields: [ragDocumentId], references: [id])
+  ragDocumentId Int?
+}
+
 

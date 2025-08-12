@@ -1739,6 +1739,7 @@ export default function AdminDashboard() {
             <span className="text-xs">Inventory</span>
           </button>
           <button
+           
             onClick={() => setActiveTab("staff")}
             className={`flex-1 py-3 text-center border-b-2 ${
               activeTab === "staff" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
@@ -1909,6 +1910,7 @@ export default function AdminDashboard() {
         {activeTab === "inventory" && <Inventory />}
         {activeTab === "staff" && <StaffManagementPage />}
         {activeTab === "messages" && <MessagesPage />}
+       
       </main>
       {editModalOpen && (
         <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />
