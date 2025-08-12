@@ -146,8 +146,15 @@ export default function AdminDashboard() {
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [tableStatus, setTableStatus] = useState<{ [key: number]: boolean }>({})
   const [open, setOpen] = useState(false)
+  const [showTableDialog, setShowTableDialog] = useState(false)
+  const [selectedTableData, setSelectedTableData] = useState<{
+    tableNumber: number;
+    orderId: number;
+    items: OrderItem[];
+  } | null>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const tableDialogRef = useRef<HTMLDivElement>(null)
 
   // Mock sales data for charts
   const dailySalesData = [
@@ -193,6 +200,9 @@ export default function AdminDashboard() {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false)
+      }
+      if (tableDialogRef.current && !tableDialogRef.current.contains(event.target as Node)) {
+        setShowTableDialog(false)
       }
     }
 
@@ -781,6 +791,21 @@ export default function AdminDashboard() {
       setNotifications((prev) => [newNotification, ...prev])
     } catch (error) {
       console.error("Error deleting order:", error)
+    }
+  }
+
+  const handleTableClick = (tableNumber: number) => {
+    if (tableStatus[tableNumber]) {
+      // Find the order for this table
+      const tableOrder = orders.find((order) => order.tableNumber === tableNumber)
+      if (tableOrder) {
+        setSelectedTableData({
+          tableNumber,
+          orderId: tableOrder.orderId || tableOrder.id,
+          items: tableOrder.items
+        })
+        setShowTableDialog(true)
+      }
     }
   }
 
@@ -1512,9 +1537,12 @@ export default function AdminDashboard() {
         {Array.from({ length: 9 }, (_, i) => i + 1).map((tableNumber) => (
           <div
             key={tableNumber}
-            className={`p-6 rounded-xl border ${
-              tableStatus[tableNumber] ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"
+            className={`p-6 rounded-xl border transition-all ${
+              tableStatus[tableNumber] 
+                ? "bg-red-50 border-red-200 cursor-pointer hover:bg-red-100 hover:shadow-md" 
+                : "bg-green-50 border-green-200"
             }`}
+            onClick={() => handleTableClick(tableNumber)}
           >
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold">Table {tableNumber}</h3>
@@ -1529,11 +1557,88 @@ export default function AdminDashboard() {
                 <p className="text-gray-600">
                   Order ID: {orders.find((order) => order.tableNumber === tableNumber)?.orderId || "N/A"}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">Click to view details</p>
               </div>
             )}
           </div>
         ))}
       </div>
+
+      {/* Table Order Details Dialog */}
+      {showTableDialog && selectedTableData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div 
+            ref={tableDialogRef}
+            className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">
+                Table {selectedTableData.tableNumber} - Order #{selectedTableData.orderId}
+              </h3>
+              <button
+                onClick={() => setShowTableDialog(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold text-gray-700 border-b pb-2">Order Items:</h4>
+              {selectedTableData.items.map((item, index) => (
+                <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-800">{item.name}</p>
+                    <p className="text-sm text-gray-600">₹{item.price?.toFixed(2) || '0.00'} each</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-sm font-medium">
+                      Qty: {item.quantity || 1}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-gray-700">Total Items:</span>
+                <span className="font-bold text-amber-600">
+                  {selectedTableData.items.reduce((sum, item) => sum + (item.quantity || 1), 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <span className="font-semibold text-gray-700">Total Amount:</span>
+                <span className="font-bold text-amber-600">
+                  ₹{selectedTableData.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-2">
+              <button
+                onClick={() => setShowTableDialog(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  const order = orders.find((o) => o.tableNumber === selectedTableData.tableNumber)
+                  if (order) {
+                    setSelectedOrder(order)
+                    setActiveTab("orders")
+                    setShowTableDialog(false)
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors"
+              >
+                View Full Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -1652,6 +1757,7 @@ export default function AdminDashboard() {
               <div className="flex-shrink-0 flex items-center flex-col">
                 <h1 className="text-xl font-bold text-amber-500">BITE & CO</h1>
                 <div className="text-xs text-gray-500">
+
                   <span>+91 9874563210 | Belgavi</span>
                 </div>
               </div>

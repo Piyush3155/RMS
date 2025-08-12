@@ -171,7 +171,7 @@ function KitchenPageContent() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [searchParams, inventory.length, lowStockAlerts.length])
+  }, [searchParams, inventory, inventory.length, lowStockAlerts.length])
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {

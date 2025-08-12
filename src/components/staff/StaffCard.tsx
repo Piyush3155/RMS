@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
 
 interface Staff {
   id: number
@@ -74,14 +75,14 @@ export default function StaffCard({
   const isCheckedIn = todayAttendance?.checkIn && !todayAttendance?.checkOut
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
-      <CardHeader className="pb-3">
+    <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 flex flex-col">
+      <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="relative">
-              <Avatar className="h-14 w-14 ring-2 ring-background shadow-md">
+              <Avatar className="h-16 w-16 ring-2 ring-background shadow-md">
                 <AvatarImage 
-                  src={staff.photo || "/placeholder.svg?height=56&width=56"} 
+                  src={staff.photo || "/placeholder.svg?height=64&width=64"} 
                   alt={staff.name}
                 />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
@@ -91,24 +92,24 @@ export default function StaffCard({
                     .join("")}
                 </AvatarFallback>
               </Avatar>
-              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+              <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
                 isCheckedIn ? 'bg-green-500' : 'bg-gray-400'
               }`} />
             </div>
-            <div>
-              <CardTitle className="text-lg font-semibold text-gray-900">{staff.name}</CardTitle>
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-bold text-gray-900">{staff.name}</CardTitle>
               <p className="text-sm text-blue-600 font-medium">{staff.role}</p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 pt-1">
                 <Badge 
                   variant={staff.status === "Active" ? "default" : "secondary"}
-                  className={staff.status === "Active" ? "bg-green-100 text-green-800" : ""}
+                  className={`text-xs ${staff.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
                 >
                   {staff.status}
                 </Badge>
                 {staff.email && (
-                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
                     <Key className="h-3 w-3 mr-1" />
-                    Login
+                    Login Enabled
                   </Badge>
                 )}
               </div>
@@ -142,90 +143,78 @@ export default function StaffCard({
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-grow">
         {/* Contact Information */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Phone className="h-4 w-4" />
+        <div className="space-y-2 text-sm text-gray-600">
+          <div className="flex items-center gap-3">
+            <Phone className="h-4 w-4 text-gray-400" />
             <span>{staff.phone}</span>
           </div>
           {staff.email && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="h-4 w-4" />
+            <div className="flex items-center gap-3">
+              <Mail className="h-4 w-4 text-gray-400" />
               <span className="truncate">{staff.email}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Calendar className="h-4 w-4" />
-            <span>Joined {format(new Date(staff.joinedAt), "MMM dd, yyyy")}</span>
+          <div className="flex items-center gap-3">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <span>Joined on {format(new Date(staff.joinedAt), "MMM dd, yyyy")}</span>
           </div>
         </div>
 
         <Separator />
 
         {/* Attendance Stats */}
-        <div className="bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
             <span className="text-sm font-medium text-gray-700">Attendance Rate</span>
-            <span className="text-sm font-bold text-gray-900">{stats.attendanceRate}%</span>
+            <span className="text-lg font-bold text-blue-600">{stats.attendanceRate}%</span>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="bg-white rounded-md p-2">
-              <p className="text-xs text-gray-500">Total</p>
-              <p className="font-semibold text-gray-900">{stats.total}</p>
-            </div>
-            <div className="bg-white rounded-md p-2">
-              <p className="text-xs text-gray-500">Present</p>
-              <p className="font-semibold text-green-600">{stats.present}</p>
-            </div>
-            <div className="bg-white rounded-md p-2">
-              <p className="text-xs text-gray-500">Absent</p>
-              <p className="font-semibold text-red-600">{stats.absent}</p>
-            </div>
+          <Progress value={stats.attendanceRate} className="h-2" />
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>{stats.present} Present</span>
+            <span>{stats.absent} Absent</span>
+            <span>{stats.total} Total Days</span>
           </div>
         </div>
-
-        {/* Today's Status */}
-        <div className={`flex items-center justify-between p-3 rounded-lg border-2 ${
-          isCheckedIn 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-gray-50 border-gray-200'
-        }`}>
-          <div>
-            <span className="text-sm font-medium text-gray-700">Today&apos;s Status</span>
-            <div className="text-xs text-gray-500">
-              {todayAttendance?.checkIn && (
-                <span>In: {format(new Date(todayAttendance.checkIn), "hh:mm a")}</span>
-              )}
-              {todayAttendance?.checkOut && (
-                <span className="ml-2">Out: {format(new Date(todayAttendance.checkOut), "hh:mm a")}</span>
-              )}
-            </div>
-          </div>
-          <Badge 
-            variant={isCheckedIn ? "default" : "outline"}
-            className={isCheckedIn ? "bg-green-100 text-green-800" : ""}
-          >
-            {isCheckedIn ? "Checked In" : "Not Checked In"}
-          </Badge>
-        </div>
-
-        {/* Action Button */}
-        <Button
-          variant={isCheckedIn ? "destructive" : "default"}
-          onClick={() => (isCheckedIn ? onCheckOut(staff.id) : onCheckIn(staff.id))}
-          disabled={checkInLoading === staff.id}
-          className="w-full"
-          size="lg"
-        >
-          {checkInLoading === staff.id ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-          ) : (
-            <Clock className="h-4 w-4 mr-2" />
-          )}
-          {isCheckedIn ? "Check Out" : "Check In"}
-        </Button>
       </CardContent>
+
+      {/* Action Area */}
+      <div className={`p-4 mt-2 border-t-2 ${
+        isCheckedIn 
+          ? 'bg-green-50 border-green-200' 
+          : 'bg-gray-50 border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">
+              {isCheckedIn ? "Checked In" : "Not Checked In"}
+            </p>
+            <p className="text-xs text-gray-500">
+              {todayAttendance?.checkIn && !todayAttendance.checkOut && `Since ${format(new Date(todayAttendance.checkIn), "hh:mm a")}`}
+              {todayAttendance?.checkOut && `Checked out at ${format(new Date(todayAttendance.checkOut), "hh:mm a")}`}
+              {!todayAttendance && "No record for today"}
+            </p>
+          </div>
+          <Button
+            variant={isCheckedIn ? "destructive" : "default"}
+            onClick={() => (isCheckedIn ? onCheckOut(staff.id) : onCheckIn(staff.id))}
+            disabled={checkInLoading === staff.id || !!todayAttendance?.checkOut}
+            className="w-32 shadow-md"
+            size="sm"
+          >
+            {checkInLoading === staff.id ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <Clock className="h-4 w-4 mr-2" />
+                {isCheckedIn ? "Check Out" : "Check In"}
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     </Card>
   )
 }
+      

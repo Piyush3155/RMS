@@ -11,10 +11,14 @@ export const config = {
   },
 }
 
-const emailUser = process.env.EMAIL_USER
-const emailPass = process.env.EMAIL_PASS
-
 export async function POST(req: NextRequest) {
+  const emailUser = process.env.EMAIL_USER
+  const emailPass = process.env.EMAIL_PASS
+
+  if (!emailUser || !emailPass) {
+    return NextResponse.json({ error: "Email configuration is missing." }, { status: 500 });
+  }
+
   try {
     // Read the entire body as a buffer
     const chunks = []

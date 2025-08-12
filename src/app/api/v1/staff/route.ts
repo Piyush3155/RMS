@@ -6,6 +6,45 @@ import { generatePassword, hashPassword } from "@/lib/password-generator"
 
 export async function GET() {
   try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Normalize to start of day
+
+    // Tuesday is a holiday (0=Sun, 1=Mon, 2=Tue, ...)
+    if (today.getDay() !== 2) {
+      // Get all active staff
+      const activeStaff = await prisma.staff.findMany({
+        where: { status: "Active" },
+      })
+
+      if (activeStaff.length > 0) {
+        // Get today's attendance records for all active staff
+        const todaysAttendance = await prisma.staffAttendance.findMany({
+          where: {
+            staffId: { in: activeStaff.map((s) => s.id) },
+            date: {
+              gte: today,
+              lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+            },
+          },
+        })
+
+        const staffWithAttendance = new Set(todaysAttendance.map((a) => a.staffId))
+
+        const staffToMarkAbsent = activeStaff.filter((staff) => !staffWithAttendance.has(staff.id))
+
+        if (staffToMarkAbsent.length > 0) {
+          await prisma.staffAttendance.createMany({
+            data: staffToMarkAbsent.map((staff) => ({
+              staffId: staff.id,
+              date: today,
+              status: "Absent",
+            })),
+            skipDuplicates: true, // Avoid errors if the job runs multiple times a day
+          })
+        }
+      }
+    }
+
     const staff = await prisma.staff.findMany({
       include: {
         attendance: {
