@@ -502,9 +502,18 @@ function KitchenPageContent() {
                               </Button>
                             )}
                             {order.status === "completed" && (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                Ready to be served
-                              </Badge>
+                              <>
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Ready to be served
+                                </Badge>
+                                {/* <Button
+                                  onClick={() => handleUpdateStatus(order.id, "served")}
+                                  className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 ml-2"
+                                  variant="default"
+                                >
+                                  <Utensils className="w-4 h-4 mr-1" /> Mark as Served
+                                </Button> */}
+                              </>
                             )}
                             {order.status === "served" && (
                               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
