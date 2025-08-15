@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Loader2, Utensils, CheckCircle, ShoppingBag, PlusCircle, MinusCircle, Check, AlertCircle, Search, Leaf, Drumstick } from "lucide-react"
 import Image from "next/image"
+import { toast } from "react-toastify"
 
 // --- Types ---
 type OrderStatus = "received" | "preparing" | "completed" | "pending" | "served"
@@ -53,6 +54,20 @@ export default function WaiterPage() {
   // Add state for updating order status
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
+  // Preload notification audio
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    notificationAudioRef.current = typeof window !== "undefined" ? new Audio("/sounds/notification.mp3") : null
+    if (notificationAudioRef.current) notificationAudioRef.current.volume = 0.9
+    return () => {
+      if (notificationAudioRef.current) {
+        try { notificationAudioRef.current.pause(); notificationAudioRef.current.src = "" } catch {}
+        notificationAudioRef.current = null
+      }
+    }
+  }, [])
+
   // Fetch ready-to-serve orders
   useEffect(() => {
     async function fetchOrders() {
@@ -68,7 +83,70 @@ export default function WaiterPage() {
     }
     fetchOrders()
     const interval = setInterval(fetchOrders, 5000)
-    return () => clearInterval(interval)
+
+    // Setup SSE for realtime order updates (listen for order-updated/new-order)
+    const sseHost = (window as Window & { __SSE_HOST__?: string }).__SSE_HOST__ || `${window.location.protocol}//${window.location.hostname}:4000`
+    const es = new EventSource(`${sseHost}/events`)
+
+    const handleIncoming = (ev: MessageEvent) => {
+      try {
+        const payload = JSON.parse(ev.data)
+        const kOrder = payload?.kitchenOrder ?? payload?.order
+        if (!kOrder) return
+
+        const mapped = {
+          id: kOrder.id,
+          tableNumber: kOrder.tableNumber ?? payload.tableNumber,
+          items: kOrder.items ?? payload.items ?? [],
+          status: kOrder.status ?? payload.status ?? "pending",
+          timestamp: kOrder.timestamp ?? kOrder.createdAt ?? new Date().toISOString(),
+        }
+
+        // If order is completed, play audio and ensure it appears in the ready-to-serve list
+        if (mapped.status === "completed") {
+          // play notification sound (best-effort)
+          if (notificationAudioRef.current) {
+            notificationAudioRef.current.currentTime = 0
+            notificationAudioRef.current.play().catch(() => {})
+          }
+
+          // Add or update in the orders list
+          setOrders((prev) => {
+            const exists = prev.find((o) => String(o.id) === String(mapped.id))
+            if (exists) {
+              return prev.map((o) => (String(o.id) === String(mapped.id) ? mapped : o))
+            }
+            // prepend newest completed orders
+            return [mapped, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          })
+
+          toast.success(`Order ready — Table ${mapped.tableNumber}`)
+        } else {
+          // if status changed for an order that is currently in the list (e.g., served), update/remove it
+          setOrders((prev) => {
+            if (mapped.status !== "completed") {
+              return prev.filter((o) => String(o.id) !== String(mapped.id))
+            }
+            return prev
+          })
+        }
+      } catch (err) {
+        console.warn("SSE waiter parse error:", err)
+      }
+    }
+
+    es.addEventListener("order-updated", handleIncoming)
+    es.addEventListener("new-order", handleIncoming) // fallback: some events may be 'new-order'
+
+    es.onerror = (err) => {
+      console.warn("Waiter SSE error:", err)
+      try { es.close() } catch {}
+    }
+
+    return () => {
+      clearInterval(interval)
+      try { es.close() } catch {}
+    }
   }, [])
 
   // Fetch menu

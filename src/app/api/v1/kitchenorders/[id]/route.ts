@@ -36,6 +36,36 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       data: { status },
     })
 
+    // Notify SSE server about the status change (best-effort)
+    try {
+      const sseUrl = process.env.SSE_NOTIFY_URL || "http://localhost:4000/notify"
+      await fetch(sseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "order-updated",
+          data: {
+            kitchenOrder: {
+              id: updatedOrder.id,
+              tableNumber: updatedOrder.tableNumber,
+              items: (() => {
+                try {
+                  return JSON.parse(updatedOrder.items)
+                } catch {
+                  return []
+                }
+              })(),
+              status: updatedOrder.status,
+              timestamp: updatedOrder.createdAt,
+            },
+            status,
+          },
+        }),
+      })
+    } catch (err) {
+      console.warn("Failed to notify SSE server about order update:", err)
+    }
+
     // If status is 'served', schedule automatic deletion after 1 minute
     if (status === "served") {
       console.log(`Order ${id} marked as served. Will be deleted in 1 minute.`)
