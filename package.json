@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "dev:socket": "node server/server.js",
+    "dev:socket": "node server.js",
     "lint": "next lint",
     "postinstall": "prisma generate"
   },

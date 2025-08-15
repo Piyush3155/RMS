@@ -114,9 +114,24 @@ function KitchenPageContent() {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showInventoryDialog, setShowInventoryDialog] = useState(false)
   const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null)
-  const [lowStockAlerts, setLowStockAlerts] = useState<InventoryItem[]>([])
+  const [lowStockAlerts] = useState<InventoryItem[]>([])
   const [showLowStockAlert, setShowLowStockAlert] = useState(false)
   const processedOrdersRef = useRef<Set<string>>(new Set())
+
+  // Preload notification audio
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null)
+  useEffect(() => {
+    // instantiate once on mount
+    notificationAudioRef.current = typeof window !== "undefined" ? new Audio("/sounds/notification.mp3") : null
+    if (notificationAudioRef.current) notificationAudioRef.current.volume = 0.9
+    return () => {
+      // cleanup
+      if (notificationAudioRef.current) {
+        try { notificationAudioRef.current.pause(); notificationAudioRef.current.src = "" } catch {}
+        notificationAudioRef.current = null
+      }
+    }
+  }, [])
 
   const searchParams = useSearchParams()
 
@@ -130,6 +145,7 @@ function KitchenPageContent() {
       new Date().toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
     )
 
+    // Initial load
     fetchOrders()
       .then((data) => {
         setOrders(data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()))
@@ -137,41 +153,84 @@ function KitchenPageContent() {
       })
       .catch(console.error)
 
-    fetchInventory()
-      .then(setInventory)
-      .catch(console.error)
+    fetchInventory().then(setInventory).catch(console.error)
+    fetchUserProfile().then(setUser).catch(console.error)
 
-    fetchUserProfile()
-      .then(setUser)
-      .catch(console.error)
+    // Setup SSE connection for realtime updates
+    // Use environment override if provided, otherwise assume same host on port 4000
+    const sseHost = (window as Window & { __SSE_HOST__?: string }).__SSE_HOST__ || `${window.location.protocol}//${window.location.hostname}:4000`
+    const sseUrl = `${sseHost}/events`
+    const es = new EventSource(sseUrl)
 
-    const checkLowStock = () => {
-      const lowStock = inventory.filter(item => item.quantity <= 10) // Items with quantity <= 10 are considered low stock
-      if (lowStock.length > 0 && lowStock.length !== lowStockAlerts.length) {
-        setLowStockAlerts(lowStock)
-        setShowLowStockAlert(true)
-        // Auto-hide after 5 seconds
-        setTimeout(() => setShowLowStockAlert(false), 5000)
+    es.addEventListener("new-order", (ev: MessageEvent) => {
+      try {
+        const payload = JSON.parse(ev.data)
+
+        // play notification sound for new orders
+        if (notificationAudioRef.current) {
+          notificationAudioRef.current.currentTime = 0
+          notificationAudioRef.current.play().catch(() => {
+            // ignore play errors (browser/autoplay)
+          })
+        }
+
+        // Prefer the kitchenOrder payload (matches /api/v1/kitchenorders GET shape)
+        const kOrder = payload?.kitchenOrder
+        if (kOrder) {
+          // Normalize timestamp field if necessary
+          const mapped = {
+            id: kOrder.id,
+            tableNumber: kOrder.tableNumber,
+            items: kOrder.items || [],
+            status: kOrder.status,
+            timestamp: kOrder.timestamp ?? new Date().toISOString(),
+          }
+
+          setOrders((prev) => {
+            if (prev.find((o) => String(o.id) === String(mapped.id))) return prev
+            return [mapped, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          })
+          toast.success(`New order received — Table ${mapped.tableNumber}`)
+          fetchInventory().then(setInventory).catch(console.error)
+          return
+        }
+
+        // Backwards compatible: handle legacy `order` payload
+        const incomingOrder = payload?.order
+        if (incomingOrder) {
+          const mappedLegacy = {
+            id: incomingOrder.id,
+            tableNumber: incomingOrder.tableNumber ?? payload.tableNumber,
+            items: incomingOrder.items ?? payload.items ?? [],
+            status: incomingOrder.status ?? "pending",
+            timestamp: incomingOrder.createdAt ?? new Date().toISOString(),
+          }
+          setOrders((prev) => {
+            if (prev.find((o) => String(o.id) === String(mappedLegacy.id))) return prev
+            return [mappedLegacy, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          })
+          toast.success(`New order received — Table ${mappedLegacy.tableNumber}`)
+          fetchInventory().then(setInventory).catch(console.error)
+        } else if (payload?.tableNumber) {
+          toast.success(`New order received — Table ${payload.tableNumber}`)
+        }
+      } catch (err) {
+        console.warn("Failed to process SSE new-order event", err)
       }
+    })
+
+    es.onerror = (err) => {
+      console.warn("SSE connection error:", err)
+      // Try to close and let it be reconnected on page reload if necessary
+      try { es.close() } catch  {}
     }
 
-    if (inventory.length > 0) {
-      checkLowStock()
+    return () => {
+      try {
+        es.close()
+      } catch  {}
     }
-
-    const interval = setInterval(() => {
-      fetchOrders()
-        .then((data) =>
-          setOrders(data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())),
-        )
-        .catch(console.error)
-      fetchInventory()
-        .then(setInventory)
-        .catch(console.error)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [searchParams, inventory, inventory.length, lowStockAlerts.length])
+  }, [searchParams])
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {

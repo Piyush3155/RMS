@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await prisma.kitchendashboard.create({
+    // Create the kitchen dashboard entry and keep the created record
+    const kitchenEntry = await prisma.kitchendashboard.create({
       data: {
         tableNumber,
         items: JSON.stringify(items),
@@ -122,6 +123,45 @@ export async function POST(req: NextRequest) {
         orderId: numericOrderId, // Include the numeric order ID in the response
       }
     })
+
+    // Notify SSE server about the new/updated kitchen order (best-effort, don't fail order if notify fails)
+    try {
+      const sseUrl = process.env.SSE_NOTIFY_URL || "http://localhost:4000/notify"
+      await fetch(sseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "new-order",
+          data: {
+            // include the kitchendashboard record formatted the same way GET /api/v1/kitchenorders returns
+            kitchenOrder: kitchenEntry
+              ? {
+                  id: kitchenEntry.id,
+                  tableNumber: kitchenEntry.tableNumber,
+                  items: (() => {
+                    try {
+                      return JSON.parse(kitchenEntry.items)
+                    } catch {
+                      return []
+                    }
+                  })(),
+                  status: kitchenEntry.status,
+                  timestamp: kitchenEntry.createdAt,
+                }
+              : null,
+            // keep legacy fields too
+            order: result.order ?? null,
+            tableNumber: Number.parseInt(String(table)),
+            items,
+            price: totalPrice,
+            numericOrderId,
+            isUpdate: result.isUpdate,
+          },
+        }),
+      })
+    } catch (notifyError) {
+      console.warn("Failed to notify SSE server:", notifyError)
+    }
 
     return NextResponse.json(
       {
