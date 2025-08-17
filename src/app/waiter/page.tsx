@@ -1,9 +1,8 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Loader2, Utensils, CheckCircle, ShoppingBag, PlusCircle, MinusCircle, Check, AlertCircle, Search, Leaf, Drumstick } from "lucide-react"
+import { Loader2, Utensils, CheckCircle, ShoppingBag, PlusCircle, MinusCircle, Check, AlertCircle, Search, Leaf, Drumstick, RotateCw, XCircle } from "lucide-react"
 import Image from "next/image"
-import { toast } from "react-toastify"
 
 // --- Types ---
 type OrderStatus = "received" | "preparing" | "completed" | "pending" | "served"
@@ -51,22 +50,50 @@ export default function WaiterPage() {
   const [tableNo, setTableNo] = useState("")
   const [tableError, setTableError] = useState("")
 
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null)
+
   // Add state for updating order status
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  // audio & new-order detection refs
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const prevCompletedIdsRef = useRef<Set<string>>(new Set())
+  const firstOrderLoadRef = useRef<boolean>(true)
 
-  // Preload notification audio
-  const notificationAudioRef = useRef<HTMLAudioElement | null>(null)
-
+  // Persist cart and table number to localStorage
   useEffect(() => {
-    notificationAudioRef.current = typeof window !== "undefined" ? new Audio("/sounds/notification.mp3") : null
-    if (notificationAudioRef.current) notificationAudioRef.current.volume = 0.9
-    return () => {
-      if (notificationAudioRef.current) {
-        try { notificationAudioRef.current.pause(); notificationAudioRef.current.src = "" } catch {}
-        notificationAudioRef.current = null
-      }
+    try {
+      const saved = localStorage.getItem("rms_cart")
+      if (saved) setCart(JSON.parse(saved))
+      const savedTable = localStorage.getItem("rms_table")
+      if (savedTable) setTableNo(savedTable)
+    } catch {
+      // ignore
     }
   }, [])
+
+  // initialize audio (place a ding file in /public/ding.mp3 or change path)
+  useEffect(() => {
+    try {
+      audioRef.current = new Audio("/ding.mp3")
+      audioRef.current.preload = "auto"
+      audioRef.current.volume = 0.7
+    } catch {
+      audioRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("rms_cart", JSON.stringify(cart))
+    } catch {}
+  }, [cart])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("rms_table", tableNo)
+    } catch {}
+  }, [tableNo])
 
   // Fetch ready-to-serve orders
   useEffect(() => {
@@ -75,7 +102,25 @@ export default function WaiterPage() {
       try {
         const res = await fetch("/api/v1/kitchenorders")
         const data = await res.json()
-        setOrders(data.filter((o: Order) => o.status === "completed"))
+        // sort by timestamp desc and filter completed
+        const sorted = data.sort((a: Order, b: Order) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        const completed = sorted.filter((o: Order) => o.status === "completed")
+
+        // detect newly arrived completed orders (skip on first load)
+        const newCompletedIds: Set<string> = new Set(completed.map((o: Order) => o.id))
+        const prev = prevCompletedIdsRef.current
+        const newlyArrived = Array.from(newCompletedIds).filter(id => !prev.has(id))
+        if (!firstOrderLoadRef.current && newlyArrived.length > 0) {
+          // attempt to play sound; if blocked, show a small toast to instruct user to interact
+          audioRef.current?.play().catch(() => {
+            setToast({ message: "Enable sound by interacting with the page", type: "info" })
+            setTimeout(() => setToast(null), 2500)
+          })
+        }
+        prevCompletedIdsRef.current = newCompletedIds
+        firstOrderLoadRef.current = false
+
+        setOrders(completed)
       } catch {
         setOrders([])
       }
@@ -83,70 +128,7 @@ export default function WaiterPage() {
     }
     fetchOrders()
     const interval = setInterval(fetchOrders, 5000)
-
-    // Setup SSE for realtime order updates (listen for order-updated/new-order)
-    const sseHost = (window as Window & { __SSE_HOST__?: string }).__SSE_HOST__ || `${window.location.protocol}//${window.location.hostname}:4000`
-    const es = new EventSource(`${sseHost}/events`)
-
-    const handleIncoming = (ev: MessageEvent) => {
-      try {
-        const payload = JSON.parse(ev.data)
-        const kOrder = payload?.kitchenOrder ?? payload?.order
-        if (!kOrder) return
-
-        const mapped = {
-          id: kOrder.id,
-          tableNumber: kOrder.tableNumber ?? payload.tableNumber,
-          items: kOrder.items ?? payload.items ?? [],
-          status: kOrder.status ?? payload.status ?? "pending",
-          timestamp: kOrder.timestamp ?? kOrder.createdAt ?? new Date().toISOString(),
-        }
-
-        // If order is completed, play audio and ensure it appears in the ready-to-serve list
-        if (mapped.status === "completed") {
-          // play notification sound (best-effort)
-          if (notificationAudioRef.current) {
-            notificationAudioRef.current.currentTime = 0
-            notificationAudioRef.current.play().catch(() => {})
-          }
-
-          // Add or update in the orders list
-          setOrders((prev) => {
-            const exists = prev.find((o) => String(o.id) === String(mapped.id))
-            if (exists) {
-              return prev.map((o) => (String(o.id) === String(mapped.id) ? mapped : o))
-            }
-            // prepend newest completed orders
-            return [mapped, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          })
-
-          toast.success(`Order ready — Table ${mapped.tableNumber}`)
-        } else {
-          // if status changed for an order that is currently in the list (e.g., served), update/remove it
-          setOrders((prev) => {
-            if (mapped.status !== "completed") {
-              return prev.filter((o) => String(o.id) !== String(mapped.id))
-            }
-            return prev
-          })
-        }
-      } catch (err) {
-        console.warn("SSE waiter parse error:", err)
-      }
-    }
-
-    es.addEventListener("order-updated", handleIncoming)
-    es.addEventListener("new-order", handleIncoming) // fallback: some events may be 'new-order'
-
-    es.onerror = (err) => {
-      console.warn("Waiter SSE error:", err)
-      try { es.close() } catch {}
-    }
-
-    return () => {
-      clearInterval(interval)
-      try { es.close() } catch {}
-    }
+    return () => clearInterval(interval)
   }, [])
 
   // Fetch menu
@@ -207,9 +189,18 @@ export default function WaiterPage() {
   // Place order
   const placeOrder = async () => {
     setTableError("")
-    if (cart.length === 0) return
-    if (!tableNo.trim()) {
+    if (cart.length === 0) {
+      setToast({ message: "Cart is empty", type: "info" })
+      return
+    }
+    const trimmed = tableNo.trim()
+    if (!trimmed) {
       setTableError("Please enter table number")
+      return
+    }
+    // validate positive integer table number
+    if (!/^\d+$/.test(trimmed) || Number(trimmed) <= 0) {
+      setTableError("Table number must be a positive number")
       return
     }
     setPlacingOrder(true)
@@ -222,16 +213,28 @@ export default function WaiterPage() {
       const res = await fetch("/api/v1/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ table: tableNo.trim(), items, price: cartTotal }),
+        body: JSON.stringify({ table: trimmed, items, price: cartTotal }),
       })
       if (!res.ok) throw new Error("Order failed")
       setOrderSuccess(true)
       setCart([])
+      setToast({ message: "Order placed successfully", type: "success" })
       setTimeout(() => setOrderSuccess(false), 2000)
+      // optionally clear table number: keep it by default, but trim
+      setTableNo(trimmed)
+      setTimeout(() => setToast(null), 3000)
     } catch {
-      alert("Failed to place order")
+      setToast({ message: "Failed to place order", type: "error" })
+      setTimeout(() => setToast(null), 3000)
     }
     setPlacingOrder(false)
+  }
+
+  // clear cart helper
+  const clearCart = () => {
+    setCart([])
+    setToast({ message: "Cleared cart", type: "info" })
+    setTimeout(() => setToast(null), 2000)
   }
 
   // Function to mark order as served
@@ -248,15 +251,31 @@ export default function WaiterPage() {
           order.id === orderId ? { ...order, status: "served" } : order
         )
       );
+      setToast({ message: "Order marked as served", type: "success" })
+      setTimeout(() => setToast(null), 2500)
     } catch {
-      alert("Failed to update order status");
+      setToast({ message: "Failed to update order status", type: "error" })
+      setTimeout(() => setToast(null), 2500)
     }
     setUpdatingOrderId(null);
   };
 
   // --- Render ---
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 relative">
+      {/* Toast / notifications */}
+      <div aria-live="polite" className="fixed top-5 right-5 z-50">
+        {toast && (
+          <div className={`flex items-center gap-2 px-4 py-2 rounded shadow-lg ${toast.type === "success" ? "bg-green-600 text-white" : toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-800 text-white"}`}>
+            {toast.type === "success" ? <CheckCircle size={18} /> : toast.type === "error" ? <AlertCircle size={18} /> : <RotateCw size={18} />}
+            <span className="text-sm font-medium">{toast.message}</span>
+            <button className="ml-2 opacity-80" onClick={() => setToast(null)} aria-label="Dismiss">
+              <XCircle size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+
       <header className="bg-white shadow p-4 flex items-center gap-4">
         <Image src="/biteandco.png" alt="Logo" width={40} height={40} className="rounded-lg" />
         <h1 className="text-2xl font-bold text-gray-800">Waiter Dashboard</h1>
@@ -265,9 +284,35 @@ export default function WaiterPage() {
       <main className="container mx-auto py-6 px-4">
         {/* Orders to be served */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Utensils className="text-blue-500" /> Orders Ready to Serve
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Utensils className="text-blue-500" /> Orders Ready to Serve
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                className="flex items-center gap-2 bg-white border px-3 py-1 rounded shadow-sm hover:bg-gray-50"
+                onClick={async () => {
+                  setLoadingOrders(true)
+                  try {
+                    const res = await fetch("/api/v1/kitchenorders")
+                    const data = await res.json()
+                    const sorted = data.sort((a: Order, b: Order) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    setOrders(sorted.filter((o: Order) => o.status === "completed"))
+                    setToast({ message: "Orders refreshed", type: "info" })
+                    setTimeout(() => setToast(null), 1500)
+                  } catch {
+                    setToast({ message: "Failed to refresh", type: "error" })
+                    setTimeout(() => setToast(null), 1500)
+                  }
+                  setLoadingOrders(false)
+                }}
+                aria-label="Refresh orders"
+              >
+                <RotateCw size={16} /> Refresh
+              </button>
+            </div>
+          </div>
+
           {loadingOrders ? (
             <div className="text-center py-8">
               <Loader2 className="animate-spin mx-auto text-blue-400 mb-2" size={32} />
@@ -431,9 +476,16 @@ export default function WaiterPage() {
 
           {/* Cart */}
           <div className="mt-8 max-w-xl mx-auto bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <ShoppingBag size={20} className="text-amber-500" /> Cart
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <ShoppingBag size={20} className="text-amber-500" /> Cart
+                <span className="ml-2 text-sm bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 font-semibold">{cart.reduce((s, c) => s + c.quantity, 0)}</span>
+              </h3>
+              <div>
+                <button className="text-sm text-gray-600 hover:underline" onClick={clearCart} disabled={cart.length === 0}>Clear Cart</button>
+              </div>
+            </div>
+
             {/* Table Number Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -443,8 +495,12 @@ export default function WaiterPage() {
                 type="text"
                 value={tableNo}
                 onChange={e => setTableNo(e.target.value)}
-                className="w-full border border-gray-200 rounded px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
+                onBlur={() => setTableNo(prev => prev.trim())}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                aria-label="Table number"
                 placeholder="Enter table number"
+                className="w-full border border-gray-200 rounded px-3 py-2 focus:ring-amber-500 focus:border-amber-500"
               />
               {tableError && <div className="text-red-600 text-xs mt-1">{tableError}</div>}
             </div>
