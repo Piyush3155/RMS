@@ -35,12 +35,25 @@ import {
   QrCode,
   CookingPot,
 } from "lucide-react"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Sector } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import EditMenuModal from "@/components/editemenu/page"
 import QRCodeGenerator from "../QR/page"
 import Link from "next/link"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
 
 interface MenuItem {
   id: number
@@ -1307,6 +1320,9 @@ export default function AdminDashboard() {
 
   const renderSalesAnalysis = () => (
     <div className="space-y-6">
+      {/* New row: Top Selling Donut + Least Selling Donut */}
+      
+      
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <div className="flex justify-between items-center mb-6 relative">
@@ -1468,7 +1484,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Top Selling Items</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-4"></h3>
         {isSalesLoading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -1485,7 +1501,7 @@ export default function AdminDashboard() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead>
+             {/*  <thead>
                 <tr className="bg-gray-50 text-left border-b border-gray-200">
                   <th className="p-3 font-semibold text-gray-600 rounded-tl-xl">Rank</th>
                   <th className="p-3 font-semibold text-gray-600">Item Name</th>
@@ -1509,10 +1525,25 @@ export default function AdminDashboard() {
                     </td>
                   </tr>
                 ))}
-              </tbody>
+              </tbody> */}
             </table>
           </div>
         )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {(() => {
+          // source items: prefer backend salesAnalytics.topSellingItems else fallback local topSellingItems
+          const source = (salesAnalytics?.topSellingItems as { name: string; sold: number }[] | undefined) || topSellingItems
+          const normalized = source.map((s) => ({ name: s.name, sold: s.sold || 0 }))
+          const top5 = [...normalized].sort((a, b) => b.sold - a.sold).slice(0, 5)
+          const least5 = [...normalized].sort((a, b) => a.sold - b.sold).slice(0, 5)
+          return (
+            <>
+              <DonutCard title="Top Selling Items" items={top5} />
+              <DonutCard title="Least Selling Items" items={least5} />
+            </>
+          )
+        })()}
+      </div>
       </div>
     </div>
   )
@@ -1642,6 +1673,63 @@ export default function AdminDashboard() {
     </div>
   )
 
+  // Reusable Donut Card using shadcn-style "Donut Active" pie with tooltip and active sector
+  const DonutCard = ({ title, items }: { title: string; items: { name: string; sold: number }[] }) => {
+    const [activeIndex, setActiveIndex] = useState<number>(0)
+    const COLORS = ["#F59E0B", "#F97316", "#FB923C", "#FDBA74", "#FEEBC8"]
+    const data = items.map((it, idx) => ({ browser: it.name, visitors: it.sold, fill: COLORS[idx % COLORS.length] }))
+const total = items.reduce((s, it) => s + (it.sold || 0), 0)
+
+return (
+<Card className="flex flex-col">
+  <CardHeader className="items-center pb-0">
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{total} total sold</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 pb-0">
+        <ChartContainer
+          className="mx-auto aspect-square max-h-[220px]"
+          config={{ pie: { label: "Pie Chart", icon: undefined, color: "#F59E0B" } }} // Provide a valid config object for ChartContainer
+        >
+          <PieChart>
+            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+            <Pie
+              data={data}
+              dataKey="visitors"
+              nameKey="browser"
+              innerRadius={60}
+              outerRadius={90}
+              activeIndex={activeIndex}
+              onMouseEnter={(_: React.MouseEvent<SVGElement, MouseEvent>, index: number) => setActiveIndex(index)}
+              activeShape={({ outerRadius = 0, ...props }: import("recharts").SectorProps) => <Sector {...props} outerRadius={outerRadius + 10} />}
+              strokeWidth={5}
+            >
+              {data.map((d, idx) => (
+                <Cell key={`cell-${idx}`} fill={d.fill} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ChartContainer>
+      </CardContent>
+      <CardFooter className="flex-col gap-2 text-sm">
+        <div className="w-full">
+          <ul className="space-y-2">
+            {data.map((d) => (
+              <li key={d.browser} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: d.fill }} />
+                  <span className="text-sm font-medium text-gray-800 truncate max-w-[220px]">{d.browser}</span>
+                </div>
+                <div className="text-sm text-gray-600">{d.visitors}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </CardFooter>
+    </Card>
+  )
+}
+
   return (
     <div className="min-h-screen bg-gray-100 text-black">
       {/* Sidebar for larger screens */}
@@ -1663,7 +1751,7 @@ export default function AdminDashboard() {
                 activeTab === "orders" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
               }`}
             >
-              <ShoppingBag size={18} />
+                           <ShoppingBag size={18} />
               <span className="font-medium">Orders</span>
             </button>
 

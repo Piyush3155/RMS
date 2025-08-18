@@ -11,7 +11,7 @@ export function middleware(req: NextRequest) {
   if (publicRoutes.includes(normalizedPath)) return NextResponse.next()
   if (!username || !role) return NextResponse.redirect(new URL("/login", req.url))
 
-  if (normalizedPath.startsWith("/manager") && role !== "manager") {
+  if (normalizedPath.startsWith("/") && role !== "manager") {
     return NextResponse.redirect(new URL("/kitchen?error=access-denied", req.url))
   }
 
@@ -23,5 +23,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/manager/:path*", "/kitchen/:path*"],
+  matcher: ["//:path*", "/kitchen/:path*"],
 }
