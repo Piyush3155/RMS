@@ -13,6 +13,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ suppliers })
     }
 
+    // Return a single item by SKU for frontend autofill
+    if (type === "itemBySku") {
+      const skuParam = searchParams.get("sku")
+      if (!skuParam) {
+        return NextResponse.json({ item: null })
+      }
+      const item = await prisma.inventoryItem.findUnique({
+        where: { sku: skuParam },
+        include: {
+          supplier: { select: { id: true, name: true } },
+          variants: { select: { id: true, size: true, quantity: true } },
+        },
+      })
+      return NextResponse.json({ item: item || null })
+    }
+
     if (type === "transactions") {
       // Fetch recent 20 transactions with item and supplier info
       const transactions = await prisma.stockInOut.findMany({
@@ -182,11 +198,33 @@ export async function POST(req: NextRequest) {
         where: { sku },
       })
 
+      const now = new Date()
+
+      // If SKU exists, increment the quantity instead of erroring
       if (existingSku) {
-        return NextResponse.json({ error: "SKU already exists" }, { status: 400 })
+        const incrementAmount = Number.parseFloat(quantity.toString())
+
+        const updatedItem = await prisma.inventoryItem.update({
+          where: { id: existingSku.id },
+          data: {
+            // increment existing quantity
+            quantity: { increment: incrementAmount },
+            // optionally update some metadata fields if provided
+            name,
+            category,
+            unit,
+            reorderLevel: Number.parseFloat(reorderLevel.toString()),
+            maxCapacity: Number.parseFloat(maxCapacity.toString()),
+            supplierId: supplierId || null,
+            updatedAt: now,
+          },
+          include: { supplier: true, variants: true },
+        })
+
+        return NextResponse.json({ item: updatedItem, mergedWithExisting: true })
       }
 
-      const now = new Date()
+      // create new item when SKU does not exist
       const item = await prisma.inventoryItem.create({
         data: {
           name,

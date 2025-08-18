@@ -129,6 +129,29 @@ export default function Inventory() {
     fetchTransactions()
   }, [])
 
+  // Lookup SKU and autofill name/unit/category when adding an item
+  async function handleSkuBlur() {
+    const sku = itemForm.sku?.trim()
+    if (!sku) return
+    try {
+      const res = await fetch(`/api/v1/inventory?type=itemBySku&sku=${encodeURIComponent(sku)}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const existing = data.item
+      if (existing) {
+        // Only autofill name, unit and category per request
+        setItemForm((prev) => ({
+          ...prev,
+          name: existing.name || prev.name,
+          unit: existing.unit || prev.unit,
+          category: existing.category || prev.category,
+        }))
+      }
+    } catch {
+      // silent fail — keep UI responsive
+    }
+  }
+
   async function fetchInventory() {
     try {
       setLoading(true)
@@ -943,6 +966,8 @@ export default function Inventory() {
                   id="sku"
                   value={itemForm.sku}
                   onChange={(e) => setItemForm({ ...itemForm, sku: e.target.value })}
+                  onBlur={handleSkuBlur}
+                  placeholder="Enter SKU and tab out to autofill if existing"
                   required
                 />
               </div>
