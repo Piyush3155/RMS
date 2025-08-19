@@ -5,9 +5,10 @@ import KitchenDashboard from "@/components/kitchendashboard/page"
 import Inventory from "@/components/inventory/page"
 import StaffManagementPage from "@/components/staff/page"
 import MessagesPage from "@/components/messages/page"
-
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
 import {
   BarChartIcon,
   Menu,
@@ -40,7 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import EditMenuModal from "@/components/editemenu/page"
 import QRCodeGenerator from "../QR/page"
-import Link from "next/link"
+
 import {
   Card,
   CardContent,
@@ -123,6 +124,91 @@ interface SalesAnalytics {
   recentOrders: unknown[]
 }
 
+const SidebarBody = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("flex flex-col h-full justify-between", className)}>{children}</div>
+)
+interface SidebarLinkProps {
+  link: {
+    label: string
+    icon: React.ReactNode
+    tab?: string
+  }
+  active?: boolean
+  onClick?: () => void
+  expanded?: boolean
+}
+
+const SidebarLink = ({ link, active, onClick, expanded }: SidebarLinkProps & { expanded: boolean }) => (
+  <button
+    className={cn(
+      "flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors w-full",
+      active ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50",
+      !expanded && "justify-center px-0",
+      expanded && "ml-2" // left margin when expanded
+    )}
+    onClick={onClick}
+    type="button"
+    title={!expanded ? link.label : undefined}
+  >
+    {link.icon}
+    {expanded && <span className="font-medium">{link.label}</span>}
+  </button>
+)
+
+const Sidebar = ({
+  open,
+  children,
+}: {
+  open: boolean
+  setOpen: (v: boolean) => void
+  children: (expanded: boolean) => React.ReactNode
+}) => {
+  const [hovered, setHovered] = useState(false)
+  const expanded = open || hovered
+  // Provide expanded as context to children via a render prop pattern
+  return (
+    <aside
+      className={cn(
+        "fixed top-0 left-0 h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-200 z-30",
+        expanded ? "w-64" : "w-20"
+      )}
+      style={{ minWidth: expanded ? 256 : 80 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center justify-between pt-4">
+        {expanded ? <Logo /> : <LogoIcon />}
+      </div>
+      <SidebarBody className="flex-1 flex flex-col justify-between">
+        {children(expanded)}
+      </SidebarBody>
+    </aside>
+  )
+}
+const Logo = () => (
+  <div className="flex justify-center items-center w-full">
+    <motion.span
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="font-medium text-black dark:text-white whitespace-pre flex items-center justify-center"
+    >
+      <Image src="/biteandco.png" alt="Logo" width={64} height={64} className="mx-auto" />
+    </motion.span>
+  </div>
+)
+const LogoIcon = () => (
+    <div className="flex justify-center items-center w-full">
+    <motion.span
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="font-medium text-black dark:text-white whitespace-pre flex items-center justify-center"
+    >
+      <Image src="/biteandco.png" alt="Logo" width={64} height={64} className="mx-auto" />
+    </motion.span>
+  </div>
+)
+
+// --- Main Dashboard Component ---
 export default function AdminDashboard() {
   const router = useRouter()
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -1693,6 +1779,7 @@ return (
         >
           <PieChart>
             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+
             <Pie
               data={data}
               dataKey="visitors"
@@ -1730,232 +1817,80 @@ return (
   )
 }
 
+  // Sidebar links definition
+  const sidebarLinks = [
+    { label: "Orders", icon: <ShoppingBag size={20} />, tab: "orders" },
+    { label: "Menu", icon: <Menu size={20} />, tab: "menu" },
+    { label: "Sales", icon: <BarChartIcon size={20} />, tab: "sales" },
+    { label: "Tables", icon: <LayoutDashboard size={20} />, tab: "tables" },
+    { label: "QR Codes", icon: <QrCode size={20} />, tab: "qrcodes" },
+    { label: "Kitchen", icon: <CookingPot size={20} />, tab: "kitchen" },
+    { label: "Inventory", icon: <ShoppingBag size={20} />, tab: "inventory" },
+    { label: "Staff", icon: <User size={20} />, tab: "staff" },
+    { label: "Messages", icon: <Bell size={20} />, tab: "messages" },
+  ];
+
+  // Sidebar open/close state
+  const [sidebarOpen, setSidebarOpen] = useState(false) // default to collapsed
+
+  // Helper to compute sidebar width for main content margin
+  const [sidebarWidth, setSidebarWidth] = useState(80)
+  const [, setSidebarExpanded] = useState(false)
+
+  // Track sidebar expanded/collapsed state
+  const handleSidebarHover = (expanded: boolean) => {
+    setSidebarExpanded(expanded)
+    setSidebarWidth(expanded ? 256 : 80)
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 text-black">
-      {/* Sidebar for larger screens */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 hidden lg:block">
-        <div className="p-6">
-          <Image src="/biteandco.png" alt="Logo" width={48} height={48} className="h-20 w-auto mb-4 relative left-16" />
-          <p className="text-sm text-gray-500 mt-1 text-center">Restaurant Management</p>
-          <div className="mt-2 text-xs text-gray-500 text-center">
-            <p>Contact: +91 9874563210</p>
-            <p>Address: Belgavi</p>
-          </div>
-        </div>
-
-        <div className="px-3 py-4">
-          <div className="space-y-1">
-            <button
-              onClick={() => setActiveTab("orders")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "orders" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-                           <ShoppingBag size={18} />
-              <span className="font-medium">Orders</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("menu")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "menu" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <Menu size={18} />
-              <span className="font-medium">Menu</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("sales")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "sales" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <BarChartIcon size={18} />
-              <span className="font-medium">Sales</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("tables")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "tables" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <LayoutDashboard size={18} />
-              <span className="font-medium">Tables</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("qrcodes")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "qrcodes" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <QrCode size={18} />
-              <span className="font-medium">QR Codes</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("kitchen")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "kitchen" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <CookingPot size={18} />
-              <span className="font-medium">Kitchen Dashboard</span>
-            </button>
-
-               <button
-                  onClick={() => setActiveTab("staff")}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                    activeTab === "staff" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <User size={18} />
-                  <span className="font-medium">Staff Dashboard</span>
-                </button>
-                <button
-              onClick={() => setActiveTab("inventory")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "inventory" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <FileText size={18} />
-              <span className="font-medium">Inventory</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("messages")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                activeTab === "messages" ? "bg-amber-50 text-amber-700" : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <Bell size={18} />
-              <span className="font-medium">Messages</span>
-            </button>
-            {/* Kitchen dashboard is now integrated as a tab */}
-          </div>
-        </div>
-      </div>
-
-      {/* Top navigation for mobile */}
-      <nav className="bg-white shadow-sm sticky top-0 z-10 lg:hidden">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center flex-col">
-                <h1 className="text-xl font-bold text-amber-500">BITE & CO</h1>
-                <div className="text-xs text-gray-500">
-
-                  <span>+91 9874563210 | Belgavi</span>
+    <div className="min-h-screen bg-gray-100 text-black flex">
+      {/* Sidebar */}
+      <Sidebar
+        open={sidebarOpen}
+        setOpen={setSidebarOpen}
+      >
+        {(expanded: boolean) => {
+          // Track expanded state for main content margin
+          handleSidebarHover(expanded)
+          return (
+            <>
+              <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+                <div className="mt-8 flex flex-col gap-2">
+                  {sidebarLinks.map((link, idx) => (
+                    <SidebarLink
+                      key={idx}
+                      link={link}
+                      active={activeTab === link.tab}
+                      onClick={() => setActiveTab(link.tab)}
+                      expanded={expanded}
+                    />
+                  ))}
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                {initial || "G"}
-              </span>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="text-red-600 p-2 rounded-full hover:bg-red-50"
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+              <div className="mb-4">
+                <SidebarLink
+                  link={{
+                    label: isLoggingOut ? "Logging out..." : "Logout",
+                    icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+                  }}
+                  onClick={handleLogout}
+                  expanded={expanded}
+                />
+              </div>
+            </>
+          )
+        }}
+      </Sidebar>
 
-      {/* Mobile tab navigation */}
-      <div className="bg-white shadow-sm sticky top-16 z-10 lg:hidden">
-        <div className="flex justify-between px-4">
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "orders" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <ShoppingBag size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Orders</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("menu")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "menu" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <Menu size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Menu</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("sales")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "sales" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <BarChartIcon size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Sales</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("tables")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "tables" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <LayoutDashboard size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Tables</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("qrcodes")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "qrcodes" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <FileText size={18} className="mx-auto mb-1" />
-            <span className="text-xs">QR Codes</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("kitchen")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "kitchen" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <CookingPot size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Kitchen</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("inventory")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "inventory" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <FileText size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Inventory</span>
-          </button>
-          <button
-           
-            onClick={() => setActiveTab("staff")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "staff" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <User size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Staff</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("messages")}
-            className={`flex-1 py-3 text-center border-b-2 ${
-              activeTab === "messages" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-600"
-            }`}
-          >
-            <Bell size={18} className="mx-auto mb-1" />
-            <span className="text-xs">Messages</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Top bar for desktop */}
-      <div className="hidden lg:block lg:pl-64">
+      {/* Main content */}
+      <div
+        className="flex-1 flex flex-col min-h-screen transition-all duration-200"
+        style={{
+          marginLeft: `${sidebarWidth}px`,
+        }}
+      >
+        {/* Top bar */}
         <div className="bg-white border-b border-gray-200 py-4 px-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <LayoutDashboard className="text-amber-500" size={20} />
@@ -1970,8 +1905,7 @@ return (
               {activeTab === "staff" && "Staff Management"}
               {activeTab === "messages" && "Messages"}
             </h2>
-                   </div>
-
+          </div>
           <div className="flex items-center gap-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -2092,23 +2026,22 @@ return (
             </div>
           </div>
         </div>
+        {/* Main area */}
+        <main className={`p-4 sm:p-6 lg:p-8 ${activeTab === "sales" ? "max-w-7xl" : ""} mx-auto w-full`}>
+          {activeTab === "orders" && renderOrders()}
+          {activeTab === "menu" && renderMenu()}
+          {activeTab === "sales" && renderSalesAnalysis()}
+          {activeTab === "tables" && renderTableManagement()}
+          {activeTab === "qrcodes" && <QRCodeGenerator />}
+          {activeTab === "kitchen" && <KitchenDashboard />}
+          {activeTab === "inventory" && <Inventory />}
+          {activeTab === "staff" && <StaffManagementPage />}
+          {activeTab === "messages" && <MessagesPage />}
+        </main>
+        {editModalOpen && (
+          <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />
+        )}
       </div>
-
-      <main className={`p-4 sm:p-6 lg:p-8 ${activeTab === "sales" ? "max-w-7xl" : ""} mx-auto lg:pl-72`}>
-        {activeTab === "orders" && renderOrders()}
-        {activeTab === "menu" && renderMenu()}
-        {activeTab === "sales" && renderSalesAnalysis()}
-        {activeTab === "tables" && renderTableManagement()}
-        {activeTab === "qrcodes" && <QRCodeGenerator />}
-        {activeTab === "kitchen" && <KitchenDashboard />}
-        {activeTab === "inventory" && <Inventory />}
-        {activeTab === "staff" && <StaffManagementPage />}
-        {activeTab === "messages" && <MessagesPage />}
-       
-      </main>
-      {editModalOpen && (
-        <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />
-      )}
     </div>
   )
 }
