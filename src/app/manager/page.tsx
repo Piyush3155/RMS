@@ -55,6 +55,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import AIAssistantPage from "@/components/aiassistant/page"
 
 interface MenuItem {
   id: number
@@ -1828,6 +1829,7 @@ return (
     { label: "Inventory", icon: <ShoppingBag size={20} />, tab: "inventory" },
     { label: "Staff", icon: <User size={20} />, tab: "staff" },
     { label: "Messages", icon: <Bell size={20} />, tab: "messages" },
+    { label: "AI Assistant" , icon: <Bell size={20} /> , tab: "ai" }
   ];
 
   // Sidebar open/close state
@@ -2037,6 +2039,7 @@ return (
           {activeTab === "inventory" && <Inventory />}
           {activeTab === "staff" && <StaffManagementPage />}
           {activeTab === "messages" && <MessagesPage />}
+          {activeTab === "ai" && <AIAssistantPage />}
         </main>
         {editModalOpen && (
           <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />
