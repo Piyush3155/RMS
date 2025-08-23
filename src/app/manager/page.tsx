@@ -928,12 +928,12 @@ export default function AdminDashboard() {
     <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <ShoppingBag className="text-amber-500" size={24} />
+          <ShoppingBag className="text-amber-300" size={24} />
           Customer Orders
         </h2>
         <button
           onClick={fetchOrders}
-          className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
+          className="bg-amber-50 text-amber-400 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors flex items-center gap-2"
         >
           <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
           {isLoading ? "Loading..." : "Refresh"}
@@ -969,7 +969,7 @@ export default function AdminDashboard() {
                   <td className="p-3">{order.tableNumber}</td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
-                      <span className="bg-amber-200 p-2 pr-4 pl-4 rounded-full text-black">{order.items.length}</span>
+                      <span className="bg-amber-100 p-2 pr-4 pl-4 rounded-full text-black">{order.items.length}</span>
                     </div>
                   </td>
                   <td className="p-3 text-right">
@@ -1130,7 +1130,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
-            <Plus className="text-amber-500" size={24} />
+            <Plus className="text-amber-300" size={24} />
             <h2 className="text-2xl font-bold text-gray-800">Add New Item</h2>
           </div>
 
@@ -1247,12 +1247,12 @@ export default function AdminDashboard() {
   
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Menu className="text-amber-500" size={24} />
+              <Menu className="text-amber-300" size={24} />
               Current Menu
             </h2>
             <button
               onClick={fetchMenuItems}
-              className="bg-amber-100 text-amber-600 px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors flex items-center gap-2"
+              className="bg-amber-50 text-amber-400 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors flex items-center gap-2"
             >
               <RefreshCw size={16} className={isMenuLoading ? "animate-spin" : ""} />
               {isMenuLoading ? "Loading..." : "Refresh"}
@@ -1376,7 +1376,7 @@ export default function AdminDashboard() {
                         </Badge>
                       </td>
                       <td className="p-3">
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">{item.category}</Badge>
+                        <Badge className="bg-amber-50 text-amber-600 border-amber-100">{item.category}</Badge>
                       </td>
                       <td className="p-3 text-right">
                         <div className="flex justify-end gap-2">
@@ -1560,10 +1560,10 @@ export default function AdminDashboard() {
               <Line
                 type="monotone"
                 dataKey="sales"
-                stroke="#f59e0b"
+                stroke="#fbbf24" // lighter amber (amber-400)
                 strokeWidth={3}
-                dot={{ fill: "#f59e0b", r: 6 }}
-                activeDot={{ fill: "#d97706", r: 8, stroke: "#fff", strokeWidth: 2 }}
+                dot={{ fill: "#fbbf24", r: 6 }}
+                activeDot={{ fill: "#f59e0b", r: 8, stroke: "#fff", strokeWidth: 2 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -1829,11 +1829,13 @@ return (
     { label: "Inventory", icon: <ShoppingBag size={20} />, tab: "inventory" },
     { label: "Staff", icon: <User size={20} />, tab: "staff" },
     { label: "Messages", icon: <Bell size={20} />, tab: "messages" },
-    { label: "AI Assistant" , icon: <Bell size={20} /> , tab: "ai" }
   ];
 
   // Sidebar open/close state
   const [sidebarOpen, setSidebarOpen] = useState(false) // default to collapsed
+
+  // Floating AI widget state
+  const [showAIWidget, setShowAIWidget] = useState(false)
 
   // Helper to compute sidebar width for main content margin
   const [sidebarWidth, setSidebarWidth] = useState(80)
@@ -2039,8 +2041,35 @@ return (
           {activeTab === "inventory" && <Inventory />}
           {activeTab === "staff" && <StaffManagementPage />}
           {activeTab === "messages" && <MessagesPage />}
-          {activeTab === "ai" && <AIAssistantPage />}
         </main>
+
+        {/* Floating AI widget button and boxed panel */}
+        {/* Image button (bottom-right) */}
+        <div>
+          <button
+            onClick={() => setShowAIWidget((v) => !v)}
+            aria-label="Open AI Assistant"
+            className="fixed bottom-6 right-6 z-50 rounded-full p-1 shadow-sm bg-white border border-amber-100 hover:shadow-lg transition-all"
+          >
+            {/* Use your preferred image in /public/ai-widget.png or replace src with a valid path */}
+            <Image
+              src="/aiassitant.jpg"
+              alt="AI Assistant"
+              width={56}
+              height={56}
+              className="rounded-full object-cover"
+            />
+          </button>
+          
+          {showAIWidget && (
+            <div className="fixed bottom-20 right-6 z-50">
+              <div className="w-[360px]">
+                <AIAssistantPage onClose={() => setShowAIWidget(false)} />
+              </div>
+            </div>
+          )}
+        </div>
+
         {editModalOpen && (
           <EditMenuModal item={itemToEdit} onClose={() => setEditModalOpen(false)} onSave={handleSaveEditedItem} />
         )}

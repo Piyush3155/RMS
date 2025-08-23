@@ -1,153 +1,203 @@
 "use client"
-import React, { useState } from 'react';
-import { Bot, Send, Loader2, X } from 'lucide-react';
-
-interface AIResponse {
-  message: string;
-  data: Record<string, unknown>[];
-}
+import React, { useState, useRef, useEffect } from "react";
+import { Send, Sparkles, X, Loader2 } from "lucide-react";
 
 const AIAssistantPage = ({ onClose }: { onClose?: () => void }) => {
-  const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState<AIResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [input, setInput] = useState<string>("");
+  const [messages, setMessages] = useState<{ text: string; isUser: boolean }[]>([]);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isFocused, setIsFocused] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
-
-    setIsLoading(true);
-    setError(null);
-    setResponse(null);
-
+  // Call the backend AI API and show typing indicator while waiting
+  const callAI = async (userMessage: string) => {
+    setIsTyping(true);
     try {
-      const res = await fetch('/api/v1/ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
+      const res = await fetch("/api/v1/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: userMessage }),
       });
 
-      const data = await res.json();
+      const payload = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'An error occurred.');
+        const errMsg = payload?.error || payload?.message || "Failed to fetch AI response.";
+        setMessages((prev) => [...prev, { text: `Error: ${errMsg}`, isUser: false }]);
+        return;
       }
 
-      setResponse(data);
+      // API is expected to return { message: string, data: [...] }
+      const aiMessage = payload?.message ?? "No response from assistant.";
+      setMessages((prev) => [...prev, { text: aiMessage, isUser: false }]);
+
+      // Optionally append raw data as a follow-up message for debugging/visibility (kept minimal)
+      if (payload?.data && Array.isArray(payload.data) && payload.data.length > 0) {
+        // Keep JSON compact to avoid huge messages; user can extend as needed
+        const dataPreview = JSON.stringify(payload.data.slice(0, 5), null, 2);
+        setMessages((prev) => [...prev, { text: `Data: ${dataPreview}`, isUser: false }]);
+      }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unexpected error occurred.');
-      }
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setMessages((prev) => [...prev, { text: `Error: ${msg}`, isUser: false }]);
     } finally {
-      setIsLoading(false);
+      setIsTyping(false);
     }
   };
 
-  const renderTable = (data: Record<string, unknown>[]) => {
-    if (!data || data.length === 0) {
-      return <p className="text-gray-500">No data to display.</p>;
-    }
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (input.trim() === "") return;
 
-    const headers = Object.keys(data[0]);
+    const userMessage = input;
+    setMessages((prev) => [...prev, { text: userMessage, isUser: true }]);
+    setInput("");
 
-    return (
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50">
-            <tr>
-              {headers.map((header) => (
-                <th key={header} className="p-3 font-semibold text-gray-600 capitalize">
-                  {header.replace(/([A-Z])/g, ' $1').trim()}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {data.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50">
-                {headers.map((header) => (
-                  <td key={`${rowIndex}-${header}`} className="p-3 text-sm text-gray-700 whitespace-nowrap">
-                    {typeof row[header] === 'boolean'
-                      ? row[header] ? 'Yes' : 'No'
-                      : row[header] === null || row[header] === undefined
-                      ? 'N/A'
-                      : String(row[header])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+    // Call backend AI
+    await callAI(userMessage);
   };
+
+  const clearChat = () => {
+    setMessages([]);
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm max-w-4xl mx-auto relative">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Bot className="text-amber-500" size={28} />
-          <h2 className="text-2xl font-bold text-gray-800">AI Assistant</h2>
+    <div className="w-full max-w-xl mx-auto h-[600px] bg-gradient-to-br from-slate-50 to-amber-50 rounded-xl overflow-hidden shadow-sm border border-amber-100 relative">
+      {/* optional close from parent */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-20 text-amber-400 hover:text-amber-600 transition-colors"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+
+      {/* Header */}
+      <div className="bg-amber-100/60 backdrop-blur-sm p-4 border-b border-amber-100 flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <Sparkles className="text-amber-300 h-5 w-5" />
+          <h2 className="text-gray-800 font-medium">AI Assistant</h2>
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 absolute top-4 right-4"
-          >
-            <X size={20} />
-          </button>
+        <button
+          onClick={clearChat}
+          className="text-amber-400 hover:text-amber-600 transition-colors"
+          aria-label="Clear chat"
+        >
+         
+        </button>
+      </div>
+
+      {/* Messages container */}
+      <div className="p-4 h-[calc(100%-132px)] overflow-y-auto bg-slate-50">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <Sparkles className="h-12 w-12 text-amber-300 mb-4" />
+            <h3 className="text-gray-800 text-xl mb-2">How can I help you today?</h3>
+            <p className="text-gray-600 text-sm max-w-xs">
+              Ask me anything and I&apos;ll do my best to assist you!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex ${msg.isUser ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] p-3 rounded-2xl ${
+                    msg.isUser
+                      ? "bg-amber-300 text-gray-900 rounded-tr-none"
+                      : "bg-white text-gray-800 rounded-tl-none border border-slate-200"
+                  } animate-fade-in`}
+                >
+                  <p className="text-sm">{msg.text}</p>
+                </div>
+              </div>
+            ))}
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] p-3 rounded-2xl bg-white text-gray-700 rounded-tl-none border border-slate-200">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-200 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-amber-200 animate-pulse delay-75"></div>
+                    <div className="w-2 h-2 rounded-full bg-amber-200 animate-pulse delay-150"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         )}
       </div>
-      <p className="text-gray-600 mb-6">
-        Ask me anything about your restaurant data. For example: &quot;Show me all staff details&quot;, &quot;List all menu items&quot;, or &quot;Get recent orders&quot;.
-      </p>
 
-      <form onSubmit={handleSubmit} className="flex items-center gap-3 mb-8">
-        <input
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="e.g., I want details of staffs"
-          className="flex-grow p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          className="bg-amber-500 text-white px-4 py-3 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-          disabled={isLoading || !prompt.trim()}
-        >
-          {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-          <span>{isLoading ? 'Thinking...' : 'Ask'}</span>
-        </button>
+      {/* Input form */}
+      <form
+        onSubmit={handleSubmit}
+        className={`p-4 border-t ${isFocused ? "border-amber-300/60 bg-white" : "border-slate-100 bg-white"} transition-colors duration-200`}
+      >
+        <div className="relative flex items-center">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder="Type your message..."
+            className="w-full bg-white border border-slate-200 rounded-full py-3 pl-4 pr-12 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300/70"
+          />
+          <button
+            type="submit"
+            disabled={input.trim() === ""}
+            className={`absolute right-1 rounded-full p-2 ${
+              input.trim() === ""
+                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                : "text-gray-900 bg-amber-300 hover:bg-amber-200"
+            } transition-colors`}
+            aria-label="Send message"
+          >
+            {isTyping ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </button>
+        </div>
       </form>
 
-      <div className="min-h-[200px]">
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center text-gray-500">
-            <Loader2 className="animate-spin text-amber-500 mb-2" size={32} />
-            <p>Fetching data...</p>
-          </div>
-        )}
+      <style>
+        {`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-        {error && (
-          <div className="bg-red-50 text-red-700 p-4 rounded-lg">
-            <p className="font-semibold">Error</p>
-            <p>{error}</p>
-          </div>
-        )}
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
 
-        {response && (
-          <div className="space-y-4">
-            <p className="text-green-700 bg-green-50 p-3 rounded-lg">{response.message}</p>
-            {renderTable(response.data)}
-          </div>
-        )}
-      </div>
+        .delay-75 {
+          animation-delay: 0.2s;
+        }
+
+        .delay-150 {
+          animation-delay: 0.4s;
+        }
+        `}
+      </style>
     </div>
   );
 };
