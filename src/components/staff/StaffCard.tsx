@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Edit, Trash2, Clock, Calendar, Phone, Mail, Key, MoreVertical } from "lucide-react"
@@ -10,10 +10,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
+import { motion } from "framer-motion"
 
 interface Staff {
   id: number
@@ -78,139 +80,199 @@ export default function StaffCard({
   const stats = getAttendanceStats()
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 flex flex-col">
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-16 w-16 ring-2 ring-background shadow-md">
-                <AvatarImage 
-                  src={staff.photo || "/placeholder.svg?height=64&width=64"} 
-                  alt={staff.name}
-                />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-                  {staff.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
-                isCheckedIn ? 'bg-green-500' : 'bg-gray-400'
-              }`} />
-            </div>
-            <div className="space-y-1">
-              <CardTitle className="text-lg font-bold text-gray-900">{staff.name}</CardTitle>
-              <p className="text-sm text-blue-600 font-medium">{staff.role}</p>
-              <div className="flex items-center gap-2 pt-1">
-                <Badge 
-                  variant={staff.status === "Active" ? "default" : "secondary"}
-                  className={`text-xs ${staff.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ y: -4 }}
+    >
+      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-card/50 backdrop-blur-sm overflow-hidden">
+        <CardHeader className="pb-4 relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-secondary" />
+
+          <div className="flex items-start justify-between pt-2">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Avatar className="h-16 w-16 ring-4 ring-background shadow-lg">
+                  <AvatarImage src={staff.photo || "/placeholder.svg?height=64&width=64"} alt={staff.name} />
+                  <AvatarFallback className="bg-gradient-to-br from-accent to-secondary text-white font-bold text-lg">
+                    {staff.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div
+                  className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-background shadow-sm flex items-center justify-center ${
+                    isCheckedIn ? "bg-green-500" : "bg-gray-400"
+                  }`}
                 >
-                  {staff.status}
-                </Badge>
-                {staff.email && (
-                  <Badge variant="outline" className="text-xs font-normal bg-blue-50 text-blue-700 border-blue-200">
-                    <Key className="h-3 w-3 mr-1" />
-                    Login Enabled
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">{staff.name}</h3>
+                  <p className="text-accent font-semibold">{staff.role}</p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    variant={staff.status === "Active" ? "default" : "secondary"}
+                    className={`text-xs font-medium ${
+                      staff.status === "Active"
+                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${
+                        staff.status === "Active" ? "bg-green-500" : "bg-gray-500"
+                      }`}
+                    />
+                    {staff.status}
                   </Badge>
-                )}
+
+                  {staff.email && (
+                    <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/20">
+                      <Key className="h-4 w-4 mr-1" />
+                      Login Access
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent/10"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => onEdit(staff)} className="cursor-pointer">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onViewAttendance(staff)} className="cursor-pointer">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  View Attendance
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(staff.id)}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Staff
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                <Phone className="h-4 w-4 text-accent" />
+              </div>
+              <span className="font-medium">{staff.phone}</span>
+            </div>
+
+            {staff.email && (
+              <div className="flex items-center gap-3 text-sm">
+                <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Mail className="h-4 w-4 text-accent" />
+                </div>
+                <span className="font-medium truncate">{staff.email}</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 text-sm">
+              <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-accent" />
+              </div>
+              <span className="font-medium">Joined {format(new Date(staff.joinedAt), "MMM dd, yyyy")}</span>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-foreground">Attendance Performance</span>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-accent">{stats.attendanceRate}%</span>
+                <p className="text-xs text-muted-foreground">Success Rate</p>
+              </div>
+            </div>
+
+            <Progress value={stats.attendanceRate} className="h-3" />
+
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-green-50 rounded-lg p-2">
+                <p className="text-lg font-bold text-green-700">{stats.present}</p>
+                <p className="text-xs text-green-600">Present</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-2">
+                <p className="text-lg font-bold text-red-700">{stats.absent}</p>
+                <p className="text-xs text-red-600">Absent</p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-2">
+                <p className="text-lg font-bold text-blue-700">{stats.total}</p>
+                <p className="text-xs text-blue-600">Total</p>
               </div>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(staff)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onViewAttendance(staff)}>
-                <Calendar className="h-4 w-4 mr-2" />
-                View Attendance
-              </DropdownMenuItem>
-              <Separator />
-              <DropdownMenuItem 
-                onClick={() => onDelete(staff.id)}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4 flex-grow">
-        {/* Contact Information */}
-        <div className="space-y-2 text-sm text-gray-600">
-          <div className="flex items-center gap-3">
-            <Phone className="h-4 w-4 text-gray-400" />
-            <span>{staff.phone}</span>
-          </div>
-          {staff.email && (
+        </CardContent>
+
+        <div
+          className={`p-4 border-t-2 transition-colors duration-200 ${
+            isCheckedIn
+              ? "bg-green-50/50 border-green-200"
+              : isCheckedOut
+                ? "bg-blue-50/50 border-blue-200"
+                : "bg-gray-50/50 border-gray-200"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Mail className="h-4 w-4 text-gray-400" />
-              <span className="truncate">{staff.email}</span>
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  isCheckedIn ? "bg-green-500 animate-pulse" : isCheckedOut ? "bg-blue-500" : "bg-gray-400"
+                }`}
+              />
+              <div>
+                <p className="text-sm font-semibold">
+                  {isCheckedIn ? "Currently Working" : isCheckedOut ? "Shift Completed" : "Not Checked In"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {todayAttendance?.checkIn &&
+                    !todayAttendance.checkOut &&
+                    `Since ${format(new Date(todayAttendance.checkIn), "hh:mm a")}`}
+                  {todayAttendance?.checkOut && `Completed at ${format(new Date(todayAttendance.checkOut), "hh:mm a")}`}
+                  {!todayAttendance && "No activity today"}
+                </p>
+              </div>
             </div>
-          )}
-          <div className="flex items-center gap-3">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span>Joined on {format(new Date(staff.joinedAt), "MMM dd, yyyy")}</span>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Attendance Stats */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-baseline">
-            <span className="text-sm font-medium text-gray-700">Attendance Rate</span>
-            <span className="text-lg font-bold text-blue-600">{stats.attendanceRate}%</span>
-          </div>
-          <Progress value={stats.attendanceRate} className="h-2" />
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>{stats.present} Present</span>
-            <span>{stats.absent} Absent</span>
-            <span>{stats.total} Total Days</span>
-          </div>
-        </div>
-      </CardContent>
-
-      {/* Action Area */}
-      <div className={`p-4 mt-2 border-t-2 ${
-        isCheckedIn 
-          ? 'bg-green-50 border-green-200' 
-          : 'bg-gray-50 border-gray-200'
-      }`}>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-sm font-semibold text-gray-800">
-              {isCheckedIn ? "Checked In" : isCheckedOut ? "Checked Out" : "Not Checked In"}
-            </p>
-            <p className="text-xs text-gray-500">
-              {todayAttendance?.checkIn && !todayAttendance.checkOut && `Since ${format(new Date(todayAttendance.checkIn), "hh:mm a")}`}
-              {todayAttendance?.checkOut && `Checked out at ${format(new Date(todayAttendance.checkOut), "hh:mm a")}`}
-              {!todayAttendance && "No record for today"}
-            </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Check In button - only disabled if already checked in and not checked out */}
+          <div className="flex gap-2">
             <Button
-              variant="default"
+              variant={isCheckedIn ? "secondary" : "default"}
               onClick={() => onCheckIn(staff.id)}
               disabled={checkInLoading === staff.id || isCheckedIn}
-              className="w-32 shadow-md"
+              className="flex-1 h-10"
               size="sm"
             >
               {checkInLoading === staff.id ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
               ) : (
                 <>
                   <Clock className="h-4 w-4 mr-2" />
@@ -219,17 +281,16 @@ export default function StaffCard({
               )}
             </Button>
 
-            {/* Check Out button - only visible when checked in and not checked out */}
             {isCheckedIn && (
               <Button
-                variant="destructive"
+                variant="outline"
                 onClick={() => onCheckOut(staff.id)}
                 disabled={checkInLoading === staff.id}
-                className="w-32 shadow-md"
+                className="flex-1 h-10 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 size="sm"
               >
                 {checkInLoading === staff.id ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                 ) : (
                   <>
                     <Clock className="h-4 w-4 mr-2" />
@@ -240,8 +301,7 @@ export default function StaffCard({
             )}
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </motion.div>
   )
 }
-
