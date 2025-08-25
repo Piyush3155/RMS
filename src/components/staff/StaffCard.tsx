@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Edit, Trash2, Clock, Calendar, Phone, Mail, Key, MoreVertical } from "lucide-react"
-import { format } from "date-fns"
+import { format, isToday } from "date-fns"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,8 +58,8 @@ export default function StaffCard({
   checkInLoading,
 }: StaffCardProps) {
   const getTodayAttendance = () => {
-    const today = format(new Date(), "yyyy-MM-dd")
-    return staff.attendance.find((a) => a.date.startsWith(today))
+    // Use isToday to handle timezone/format reliably
+    return staff.attendance.find((a) => isToday(new Date(a.date)))
   }
 
   const getAttendanceStats = () => {
@@ -71,8 +71,11 @@ export default function StaffCard({
   }
 
   const todayAttendance = getTodayAttendance()
+  // Consider checked in if checkIn exists and checkOut does NOT exist
+  const isCheckedIn = !!todayAttendance?.checkIn && !todayAttendance?.checkOut
+  const isCheckedOut = !!todayAttendance?.checkOut
+
   const stats = getAttendanceStats()
-  const isCheckedIn = todayAttendance?.checkIn && !todayAttendance?.checkOut
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 flex flex-col">
@@ -188,7 +191,7 @@ export default function StaffCard({
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-sm font-semibold text-gray-800">
-              {isCheckedIn ? "Checked In" : "Not Checked In"}
+              {isCheckedIn ? "Checked In" : isCheckedOut ? "Checked Out" : "Not Checked In"}
             </p>
             <p className="text-xs text-gray-500">
               {todayAttendance?.checkIn && !todayAttendance.checkOut && `Since ${format(new Date(todayAttendance.checkIn), "hh:mm a")}`}
@@ -196,25 +199,49 @@ export default function StaffCard({
               {!todayAttendance && "No record for today"}
             </p>
           </div>
-          <Button
-            variant={isCheckedIn ? "destructive" : "default"}
-            onClick={() => (isCheckedIn ? onCheckOut(staff.id) : onCheckIn(staff.id))}
-            disabled={checkInLoading === staff.id || !!todayAttendance?.checkOut}
-            className="w-32 shadow-md"
-            size="sm"
-          >
-            {checkInLoading === staff.id ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <>
-                <Clock className="h-4 w-4 mr-2" />
-                {isCheckedIn ? "Check Out" : "Check In"}
-              </>
+
+          <div className="flex items-center gap-2">
+            {/* Check In button - only disabled if already checked in and not checked out */}
+            <Button
+              variant="default"
+              onClick={() => onCheckIn(staff.id)}
+              disabled={checkInLoading === staff.id || isCheckedIn}
+              className="w-32 shadow-md"
+              size="sm"
+            >
+              {checkInLoading === staff.id ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Check In
+                </>
+              )}
+            </Button>
+
+            {/* Check Out button - only visible when checked in and not checked out */}
+            {isCheckedIn && (
+              <Button
+                variant="destructive"
+                onClick={() => onCheckOut(staff.id)}
+                disabled={checkInLoading === staff.id}
+                className="w-32 shadow-md"
+                size="sm"
+              >
+                {checkInLoading === staff.id ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Check Out
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </div>
     </Card>
   )
 }
-      
+

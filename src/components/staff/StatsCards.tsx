@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Users, CheckCircle, Clock, XCircle } from "lucide-react"
-import { format } from "date-fns"
+import { isToday } from "date-fns"
 
 interface Staff {
   id: number
@@ -30,15 +30,20 @@ interface StatsCardsProps {
 
 export default function StatsCards({ staffList }: StatsCardsProps) {
   const getTodayAttendance = (staff: Staff) => {
-    const today = format(new Date(), "yyyy-MM-dd")
-    return staff.attendance.find((a) => a.date.startsWith(today))
+    return staff.attendance.find((a) => isToday(new Date(a.date)))
   }
+
+  const activeStaff = staffList.filter((s) => s.status === "Active")
+  const presentToday = activeStaff.filter((s) => {
+    const t = getTodayAttendance(s)
+    return !!t && (t.status === "Present" || t.status === "Half Day")
+  }).length
 
   const stats = {
     total: staffList.length,
-    active: staffList.filter((s) => s.status === "Active").length,
-    presentToday: staffList.filter((s) => getTodayAttendance(s)?.status === "Present").length,
-    absentToday: staffList.filter((s) => !getTodayAttendance(s) || getTodayAttendance(s)?.status === "Absent").length,
+    active: activeStaff.length,
+    presentToday,
+    absentToday: activeStaff.length - presentToday,
   }
 
   return (

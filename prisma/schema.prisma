@@ -24,25 +24,27 @@ model kitchendashboard {
   orderId     Int?     // Added 6-digit order ID field
 }
 model Staff {
-  id        Int      @id @default(autoincrement())
-  name      String
-  role      String
-  phone     String
-  email     String?
-  photo     String?
-  joinedAt  DateTime @default(now())
-  status    String   // "Active" | "Inactive"
+  id         Int               @id @default(autoincrement())
+  name       String
+  role       String
+  phone      String
+  email      String?           @unique
+  photo      String?
+  joinedAt   DateTime          @default(now())
+  status     String            // "Active" | "Inactive"
   attendance StaffAttendance[]
 }
 
 model StaffAttendance {
-  id        Int      @id @default(autoincrement())
-  staffId   Int
-  date      DateTime
-  checkIn   DateTime?
-  checkOut  DateTime?
-  status    String
-  staff     Staff    @relation(fields: [staffId], references: [id])
+  id       Int       @id @default(autoincrement())
+  staffId  Int
+  date     DateTime
+  checkIn  DateTime?
+  checkOut DateTime?
+  status   String
+  staff    Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
 }
 
 model Menu {
