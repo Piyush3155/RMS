@@ -86,16 +86,16 @@ export default function StaffCard({
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
     >
-      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-card/50 backdrop-blur-sm overflow-hidden">
-        <CardHeader className="pb-4 relative">
+      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-card/50 backdrop-blur-sm overflow-hidden p-0">
+        <CardHeader className="pb-2 relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-secondary" />
 
-          <div className="flex items-start justify-between pt-2">
-            <div className="flex items-center gap-4">
+          <div className="flex items-start justify-between pt-1">
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <Avatar className="h-16 w-16 ring-4 ring-background shadow-lg">
+                <Avatar className="h-12 w-12 ring-2 ring-background shadow-sm">
                   <AvatarImage src={staff.photo || "/placeholder.svg?height=64&width=64"} alt={staff.name} />
-                  <AvatarFallback className="bg-gradient-to-br from-accent to-secondary text-white font-bold text-lg">
+                  <AvatarFallback className="bg-gradient-to-br from-accent to-secondary text-white font-bold text-sm">
                     {staff.name
                       .split(" ")
                       .map((n) => n[0])
@@ -103,7 +103,7 @@ export default function StaffCard({
                   </AvatarFallback>
                 </Avatar>
                 <div
-                  className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-background shadow-sm flex items-center justify-center ${
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-background shadow-sm flex items-center justify-center ${
                     isCheckedIn ? "bg-green-500" : "bg-gray-400"
                   }`}
                 >
@@ -111,10 +111,10 @@ export default function StaffCard({
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div>
-                  <h3 className="text-xl font-bold text-foreground">{staff.name}</h3>
-                  <p className="text-accent font-semibold">{staff.role}</p>
+                  <h3 className="text-lg font-bold text-foreground">{staff.name}</h3>
+                  <p className="text-accent font-semibold text-sm">{staff.role}</p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -176,8 +176,8 @@ export default function StaffCard({
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
             <div className="flex items-center gap-3 text-sm">
               <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                 <Phone className="h-4 w-4 text-accent" />
@@ -208,23 +208,23 @@ export default function StaffCard({
             <div className="flex justify-between items-center">
               <span className="text-sm font-semibold text-foreground">Attendance Performance</span>
               <div className="text-right">
-                <span className="text-2xl font-bold text-accent">{stats.attendanceRate}%</span>
+                <span className="text-xl font-bold text-accent">{stats.attendanceRate}%</span>
                 <p className="text-xs text-muted-foreground">Success Rate</p>
               </div>
             </div>
 
-            <Progress value={stats.attendanceRate} className="h-3" />
+            <Progress value={stats.attendanceRate} className="h-2" />
 
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-green-50 rounded-lg p-2">
+              <div className="bg-green-50 rounded-lg p-1">
                 <p className="text-lg font-bold text-green-700">{stats.present}</p>
                 <p className="text-xs text-green-600">Present</p>
               </div>
-              <div className="bg-red-50 rounded-lg p-2">
+              <div className="bg-red-50 rounded-lg p-1">
                 <p className="text-lg font-bold text-red-700">{stats.absent}</p>
                 <p className="text-xs text-red-600">Absent</p>
               </div>
-              <div className="bg-blue-50 rounded-lg p-2">
+              <div className="bg-blue-50 rounded-lg p-1">
                 <p className="text-lg font-bold text-blue-700">{stats.total}</p>
                 <p className="text-xs text-blue-600">Total</p>
               </div>
@@ -233,7 +233,7 @@ export default function StaffCard({
         </CardContent>
 
         <div
-          className={`p-4 border-t-2 transition-colors duration-200 ${
+          className={`p-3 border-t transition-colors duration-200 ${
             isCheckedIn
               ? "bg-green-50/50 border-green-200"
               : isCheckedOut
@@ -241,7 +241,7 @@ export default function StaffCard({
                 : "bg-gray-50/50 border-gray-200"
           }`}
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div
                 className={`w-3 h-3 rounded-full ${
@@ -268,7 +268,7 @@ export default function StaffCard({
               variant={isCheckedIn ? "secondary" : "default"}
               onClick={() => onCheckIn(staff.id)}
               disabled={checkInLoading === staff.id || isCheckedIn}
-              className="flex-1 h-10"
+              className="flex-1 h-8"
               size="sm"
             >
               {checkInLoading === staff.id ? (
@@ -286,7 +286,7 @@ export default function StaffCard({
                 variant="outline"
                 onClick={() => onCheckOut(staff.id)}
                 disabled={checkInLoading === staff.id}
-                className="flex-1 h-10 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="flex-1 h-8 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 size="sm"
               >
                 {checkInLoading === staff.id ? (
