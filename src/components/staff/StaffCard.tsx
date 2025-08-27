@@ -86,13 +86,13 @@ export default function StaffCard({
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
     >
-      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-card/50 backdrop-blur-sm overflow-hidden p-0">
+      <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-card/50 backdrop-blur-sm overflow-hidden p-0 shrink min-w-0">
         <CardHeader className="pb-2 relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-secondary" />
 
           <div className="flex items-start justify-between pt-1">
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative flex-shrink-0">
                 <Avatar className="h-12 w-12 ring-2 ring-background shadow-sm">
                   <AvatarImage src={staff.photo || "/placeholder.svg?height=64&width=64"} alt={staff.name} />
                   <AvatarFallback className="bg-gradient-to-br from-accent to-secondary text-white font-bold text-sm">
@@ -111,9 +111,9 @@ export default function StaffCard({
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <div>
-                  <h3 className="text-lg font-bold text-foreground">{staff.name}</h3>
+                  <h3 className="text-lg font-bold text-foreground truncate">{staff.name}</h3>
                   <p className="text-accent font-semibold text-sm">{staff.role}</p>
                 </div>
 
@@ -137,7 +137,7 @@ export default function StaffCard({
                   {staff.email && (
                     <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/20">
                       <Key className="h-4 w-4 mr-1" />
-                      Login Access
+                      <span className="truncate block max-w-[12rem]">{/* ensure badge content can truncate */}{'Login Access'}</span>
                     </Badge>
                   )}
                 </div>
@@ -182,7 +182,7 @@ export default function StaffCard({
               <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                 <Phone className="h-4 w-4 text-accent" />
               </div>
-              <span className="font-medium">{staff.phone}</span>
+              <span className="font-medium truncate min-w-0">{staff.phone}</span>
             </div>
 
             {staff.email && (
@@ -190,7 +190,7 @@ export default function StaffCard({
                 <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                   <Mail className="h-4 w-4 text-accent" />
                 </div>
-                <span className="font-medium truncate">{staff.email}</span>
+                <span className="font-medium truncate min-w-0">{staff.email}</span>
               </div>
             )}
 
@@ -198,7 +198,7 @@ export default function StaffCard({
               <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-accent" />
               </div>
-              <span className="font-medium">Joined {format(new Date(staff.joinedAt), "MMM dd, yyyy")}</span>
+              <span className="font-medium truncate min-w-0">Joined {format(new Date(staff.joinedAt), "MMM dd, yyyy")}</span>
             </div>
           </div>
 
